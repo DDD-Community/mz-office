@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.kakao',
     # app
     'app',
+    'question',
 ]
 
 MIDDLEWARE = [
