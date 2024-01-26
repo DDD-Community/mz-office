@@ -53,18 +53,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'storages',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.apple',
-    'allauth.socialaccount.providers.kakao',
     # app
     'app',
     'question',
 ]
 
 MIDDLEWARE = [
-    'allauth.account.middleware.AccountMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -93,16 +87,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'project.wsgi.application'
-
-# Auth Setting
-AUTHENTICATION_BACKENDS = [
-    'allauth.account.auth_backends.AuthenticationBackend',
-]
-
-SITE_ID = 1
-
-LOGIN_REDIRECT_URL = '/'  # 로그인 후 리다이렉트할 URL
-# Auth Setting End
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
