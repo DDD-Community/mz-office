@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -51,11 +52,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # pip
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',
     'storages',
     # app
     'app',
     'question',
+    'oauth',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -162,3 +166,84 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static')
 ]
 # AWS Setting End
+
+# Loggin Setting Start
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'catalina.log',
+        },
+    },
+    'loggers': {
+        'django.request': {
+            'handlers': ['file'],
+            'level': 'ERROR',  # 에러 레벨 이상의 로그만 기록
+            'propagate': False,
+        },
+    },
+}
+# Loggin Setting End
+
+# OAuth Setting Start
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [  # 기본 Permission 설정
+        # 'rest_framework.permissions.AllowAny',  # 모든 계정 액세스 허용
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': (  # Authenticationt 설정
+        # 'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        # 'rest_framework.authentication.TokenAuthentication',
+        # 'rest_framework.authentication.BasicAuthentication',
+    ),
+    'DEFAULT_RENDERER_CLASSES': [  # api 결과 전달 방식
+        'rest_framework.renderers.JSONRenderer',  # json 방식
+    ],
+    'DEFAULT_PARSER_CLASSES': [  # 요청 받을 때 body 형태
+        'rest_framework.parsers.JSONParser',
+        # 'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser',
+    ],
+    'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',  # serializer datetime format
+}
+
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_PASSWORD_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+
+REST_USE_JWT = False
+ACCOUNT_LOGOUT_ON_GET = False
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=24),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+
+    'ALGORITHM': 'HS512',
+    'SIGNING_KEY': '',
+
+    'AUTH_HEADER_TYPES': ('Bearer',),  # 인증 헤더 유형
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',  # 인증 헤더 명칭
+    'USER_ID_FIELD': 'social_id',  # 사용자 식별을 위한 토큰에 포함할 사용자 모델의 DB 필드명
+    'USER_ID_CLAIM': 'social_id',  # 사용자 식별을 저장하는 데 사용할 생성된 토큰의 클레임
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),  # 토큰 유형 지정 클래스
+    'TOKEN_TYPE_CLAIM': 'token_type',  # 토큰 유형 저장 클레임 명칭
+
+    'JTI_CLAIM': 'jti',
+}
+
+AUTH_USER_MODEL = 'users.UserModel'
+AUTHENTICATION_BACKENDS = (
+    'users.lib.backends.SettingsBackend',
+    'django.contrib.auth.backends.ModelBackend',
+)
+# OAuth Setting End
