@@ -1,6 +1,4 @@
-import requests
-import jwt
-import time
+import requests, jwt, time, os, json
 
 from django.conf import settings
 from django.shortcuts import redirect
@@ -10,10 +8,26 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from pathlib import Path
 
 from .serializers import *
 from users.models import UserModel
 from users.views import LoginView, UserView
+from django.core.exceptions import ImproperlyConfigured
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+secret_file = os.path.join(BASE_DIR, 'secrets.json')
+
+with open(secret_file) as f:
+    secrets = json.loads(f.read())
+
+def get_secret(setting, secrets=secrets):
+    try:
+        return secrets[setting]
+    except KeyError:
+        error_msg = "Set the {} environment variable".format(setting)
+        raise ImproperlyConfigured(error_msg)
 
 
 def login_api(social_type: str, social_id: str, email: str=None, phone: str=None):
@@ -42,7 +56,6 @@ def login_api(social_type: str, social_id: str, email: str=None, phone: str=None
 
     return response
 
-
 kakao_login_uri = "https://kauth.kakao.com/oauth/authorize"
 kakao_token_uri = "https://kauth.kakao.com/oauth/token"
 kakao_profile_uri = "https://kapi.kakao.com/v2/user/me"
@@ -56,8 +69,8 @@ class KakaoLoginView(APIView):
 
         ---
         '''
-        client_id = 'cb68e9478923b5a3602dc5dfde8ca178'
-        redirect_uri = 'http://127.0.0.1:8000/oauth/kakao/login/callback/'
+        client_id = get_secret("KAKAO_CLIENT_ID")
+        redirect_uri = get_secret("KAKAO_REDIRECT_URI")
         uri = f"{kakao_login_uri}?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code"
         
         res = redirect(uri)
@@ -83,9 +96,9 @@ class KakaoCallbackView(APIView):
 
         request_data = {
             'grant_type': 'authorization_code',
-            'client_id': 'cb68e9478923b5a3602dc5dfde8ca178',
-            'redirect_uri': 'http://127.0.0.1:8000/oauth/kakao/login/callback/',
-            'client_secret': 'EOKH8lMTeqkJaP1xZXS1AeDgtGGDXNp9',
+            'client_id': get_secret("KAKAO_CLIENT_ID"),
+            'redirect_uri': get_secret("KAKAO_REDIRECT_URI"),
+            'client_secret': get_secret("LOCAL_KAKAO_REDIRECT_URI"),
             'code': code,
         }
         token_headers = {
