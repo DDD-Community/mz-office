@@ -28,4 +28,6 @@ urlpatterns = [
     path('v2/', include('question.urls')),
     path('v1/', include('app.urls')),
     path('', app.views.index, name='index'),
+    path('oauth/', include('oauth.urls')),
+    path('users/', include('users.urls', namespace='users')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
