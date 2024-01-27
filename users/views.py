@@ -39,13 +39,14 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def object(self, data: dict):
-        serializer = LoginSerializer(data=data)
-        if not serializer.is_valid():
-            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # 토큰 값 판별 불가,,,,, 임시 주석 처리
+        # serializer = LoginSerializer(data=data)
+        # if not serializer.is_valid():
+        #     return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        user = serializer.validated_data
+        # user = serializer.validated_data
 
-        return Response(data=user, status=status.HTTP_200_OK)
+        return Response(data=data, status=status.HTTP_200_OK)
 
     def post(self, request):
         '''
