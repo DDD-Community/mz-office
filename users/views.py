@@ -39,14 +39,13 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def object(self, data: dict):
-        # 토큰 값 판별 불가,,,,, 임시 주석 처리
-        # serializer = LoginSerializer(data=data)
-        # if not serializer.is_valid():
-        #     return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = LoginSerializer(data=data)
+        if not serializer.is_valid():
+            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # user = serializer.validated_data
+        user = serializer.validated_data
 
-        return Response(data=data, status=status.HTTP_200_OK)
+        return Response(data=user, status=status.HTTP_200_OK)
 
     def post(self, request):
         '''
@@ -96,7 +95,7 @@ class TokenRefreshView(APIView):
         return Response(data=token, status=status.HTTP_201_CREATED)
 
 
-class MemberView(APIView):
+class MerberView(APIView):
     '''
     계정 정보
     '''

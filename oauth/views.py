@@ -1,5 +1,6 @@
-import requests, jwt, time, json, os
-from pathlib import Path
+import requests
+import jwt
+import time
 
 from django.conf import settings
 from django.shortcuts import redirect
@@ -14,21 +15,6 @@ from .serializers import *
 from users.models import UserModel
 from users.views import LoginView, UserView
 
-from django.core.exceptions import ImproperlyConfigured
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-secret_file = os.path.join(BASE_DIR, 'secrets.json')
-
-with open(secret_file) as f:
-    secrets = json.loads(f.read())
-
-def get_secret(setting, secrets=secrets):
-    try:
-        return secrets[setting]
-    except KeyError:
-        error_msg = "Set the {} environment variable".format(setting)
-        raise ImproperlyConfigured(error_msg)
 
 def login_api(social_type: str, social_id: str, email: str=None, phone: str=None):
     '''
@@ -70,8 +56,8 @@ class KakaoLoginView(APIView):
 
         ---
         '''
-        client_id = get_secret("KAKAO_CLIENT_ID")
-        redirect_uri = get_secret("KAKAO_REDIRECT_URI")
+        client_id = 'cb68e9478923b5a3602dc5dfde8ca178'
+        redirect_uri = 'http://127.0.0.1:8000/oauth/kakao/login/callback/'
         uri = f"{kakao_login_uri}?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code"
         
         res = redirect(uri)
@@ -97,9 +83,9 @@ class KakaoCallbackView(APIView):
 
         request_data = {
             'grant_type': 'authorization_code',
-            'client_id': get_secret("KAKAO_CLIENT_ID"),
-            'redirect_uri': get_secret("KAKAO_REDIRECT_URI"),
-            'client_secret': get_secret("KAKAO_CLIENT_SECRET"),
+            'client_id': 'cb68e9478923b5a3602dc5dfde8ca178',
+            'redirect_uri': 'http://127.0.0.1:8000/oauth/kakao/login/callback/',
+            'client_secret': 'EOKH8lMTeqkJaP1xZXS1AeDgtGGDXNp9',
             'code': code,
         }
         token_headers = {

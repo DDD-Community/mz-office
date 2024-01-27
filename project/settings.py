@@ -247,3 +247,19 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 # OAuth Setting End
+
+# SWAGGER Setting Start
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'in': 'header',
+            'name': 'Authorization'
+        }
+    },
+    
+    'LOGIN_URL': 'users:login',
+    'LOGOUT_URL': 'users:logout',
+    'USE_SESSION_AUTH': False,
+}
+# SWAGGER Setting End

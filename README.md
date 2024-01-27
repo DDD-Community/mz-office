@@ -18,7 +18,7 @@ OAuth를 이용한 소셜 로그인 기능 사용
 - oauth 로그인이 정상적으로 완료되면 `{"social_id": ..., "access_token": ..., "refresh_token": ...}` 값이 반환
 - `/swagger/` 접속하여 우측상단에 `Authorize`버튼 클릭한다.
 - 방금전에 발급받은 `access_token`을 입력하고 `Authorize`버튼 클릭한다.
-- users의 `GET /users/info/` 요청을 전송하면 사용자의 정보가 출력된다.
+- users의 `GET /users/` 요청을 전송하면 사용자의 정보가 출력된다.
 
 ## 3. user
 회원 관리 App, 로그인, 로그아웃, 회원 정보 조회 등

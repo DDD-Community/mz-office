@@ -28,6 +28,7 @@ class CreateUserSerializer(serializers.Serializer):
 
         return user
 
+
 class LoginSerializer(serializers.Serializer):
     social_id = serializers.CharField(max_length=100)
     email = serializers.CharField(max_length=100)
@@ -36,18 +37,18 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, data):
         user = authenticate(social_id=data.get('social_id'))
         if user is None:
-            raise serializers.ValidationError({'error': '주어진 social_id에 해당하는 사용자가 없습니다.'})
+            raise serializers.ValidationError({'error': 'User with given social_id does not exist'})
 
         try:
             token = RefreshToken.for_user(user=user)
-        except Exception as e:
-            raise serializers.ValidationError({'error': f'Token 생성에 실패했습니다. 오류: {str(e)}'})
+        except:
+            raise serializers.ValidationError({'error': 'Failed create Token'})
 
-        # 사용자 email이 변경된 경우 해당 email로 갱신
+        # 사용자 email 변경된 경우 해당 email로 갱신
         if user.email != data['email']:
             user.email = data['email']
 
-        # 최근 로그인 시간 갱신
+        # 최근 로그인시간 갱신
         user.last_login = dt.datetime.now()
         user.save()
 
@@ -57,6 +58,7 @@ class LoginSerializer(serializers.Serializer):
             'refresh_token': str(token),
         }
         return data
+
 
 class LogoutSerializer(serializers.Serializer):
     refresh_token = serializers.CharField(max_length=512)
