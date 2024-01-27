@@ -49,7 +49,11 @@ class UserModel(AbstractBaseUser):
     phone = models.CharField(max_length=13, unique=True, null=True, verbose_name='휴대폰 번호', help_text='ex) 010-0000-0000')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='가입일자')
     last_login = models.DateTimeField(blank=True, null=True, verbose_name='최근 로그인 일자')
-    
+
+    nickname = models.CharField(max_length=50, null=True, verbose_name='회원 닉네임')
+    year = models.IntegerField(null=True, verbose_name='출생년도')
+    job = models.CharField(max_length=50, null=True, verbose_name='직무')
+
     is_active = models.BooleanField(default=True, verbose_name='계정 활성화 여부')
     is_admin = models.BooleanField(default=False, verbose_name='관리자 여부')
 
