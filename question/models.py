@@ -18,7 +18,7 @@ class Question(models.Model):
 class Answer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     user_id = models.CharField(max_length=100, verbose_name='소셜사용자_id')
-    select_question = models.IntegerField(null=True)
+    select_question = models.CharField(max_length=1, null=True)
 
     def __str__(self):
         return f"Answer to {self.question.title}"

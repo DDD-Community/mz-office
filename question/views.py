@@ -1,20 +1,21 @@
 from django.shortcuts import render
+from django.core.serializers import serialize
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+from .serializers import QuestionSerializer
 from .models import Question
 
 # 질문 목록
-class Questions(APIView):
-    # 질문 리스트, 이모지 고민
+class QuestionsListAPIView(APIView):
     def get(self, request, format=None):
-        # 좋아요 히스토리와 함께 조인, 블랙 리스트도 제외 필요
-        question = Question.objects.all().order_by('-id')
-        return Response(question)
+        questions = Question.objects.all().order_by('-id')
+        serializer = QuestionSerializer(questions, many=True, context={'request': request})
+        return Response(serializer.data)
 
 # 질문 등록, 수정, 삭제
-class Question(APIView):
+class QuestionAPIView(APIView):
     # 질문 등록
     def post(self, request, format=None):
         # TODO 질문 작성 시 답변 테이블 같이 받기
