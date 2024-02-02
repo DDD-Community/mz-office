@@ -23,7 +23,7 @@ services:
     depends_on:
       - postgres
     ports:
-      - 80:8000
+      - 8000:8000
     networks:
      - backend-network
       
