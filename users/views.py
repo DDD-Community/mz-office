@@ -7,7 +7,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from .serializers import *
-from .lib.permission import LoginRequired
+from .permission import LoginRequired
 
 user_retrieve_response = openapi.Response('', UserInfoSerializer)
 

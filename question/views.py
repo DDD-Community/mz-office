@@ -14,7 +14,7 @@ from rest_framework.mixins import (
     DestroyModelMixin,
 )
 
-from users.lib.permission import IsAdminOrReadOnly
+from users.permission import IsAdminOrReadOnly
 from .serializers import (
     QuestionSerializer,
     QuestionCreateSerializer,
