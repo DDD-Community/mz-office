@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:  
+  postgres:
+    image: postgres:14
+    volumes:
+      - app-db:/var/lib/postgresql/data/pgdata
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=app
+    ports:
+      - 5432:5432
+    networks:
+     - backend-network
+
+  app:
+    build: .
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+    ports:
+      - 80:8000
+    networks:
+     - backend-network
+      
+volumes:
+  app-db:
+
+networks:
+  backend-network:
+    driver: bridge
