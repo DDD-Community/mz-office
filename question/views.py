@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.core.serializers import serialize
 
+from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -29,14 +30,17 @@ from .models import (
     Block,
 )
 
-
+class CustomPageNumberPagination(PageNumberPagination):
+    page_size_query_param = 'page_size'  # 페이지당 보여질 아이템 수를 파라미터로 받음
 
 class QuestionsListAPIView(ListModelMixin, GenericAPIView):
     """피드 목록"""
     # TODO: Permission 수정
+    # TODO: 페이징 추가 
     permission_classes = [AllowAny]
     queryset = Question.objects.all().order_by('-id')
     serializer_class = QuestionSerializer
+    pagination_class = CustomPageNumberPagination  # 페이징 설정 추가
     
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -45,7 +49,6 @@ class QuestionsListAPIView(ListModelMixin, GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         return self.list(self, request, *args, **kwargs)
-
 
 class QuestionAPIView(CreateModelMixin, GenericAPIView):
     """질문 등록"""
@@ -63,7 +66,7 @@ class QuestionsAPIView(UpdateModelMixin,
                        DestroyModelMixin,
                        GenericAPIView):
     """질문 수정 / 삭제"""
-    # TODO: 빨리하면 넣는걸로
+    # TODO: 빨리하면 넣는걸로 
     # TODO: Permission 수정
     permission_classes = [AllowAny]
     queryset = Question.objects.all()
