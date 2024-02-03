@@ -1,7 +1,7 @@
 # serializers.py
 from rest_framework import serializers
 from .models import Question, Report, Like, Answer, Block
-
+from users.models import UserModel
 
 class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -16,13 +16,13 @@ class QuestionSerializer(serializers.ModelSerializer):
     answer_count = serializers.SerializerMethodField()
     answer_ratio = serializers.SerializerMethodField()
 
-    # TODO: 응답 카운트 추가 
+    user_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Question
         fields = [
             'id', 
-            'user_id', 
+            'user_info',
             'emoji', 
             'title', 
             'user_voted', 
@@ -35,6 +35,19 @@ class QuestionSerializer(serializers.ModelSerializer):
             'create_at',
         ]
         ordering = ['-id']  # 정렬 순서를 지정
+
+    def get_user_info(self, obj):
+        user_id = obj.user_id
+        try:
+            user = UserModel.objects.get(social_id=user_id)
+            return {
+                'user_id': user.social_id,
+                'user_nickname': user.nickname,
+                'user_job': user.job,
+                'user_generation': user.generation,
+            }
+        except UserModel.DoesNotExist:
+            return None
 
     def get_like_count(self, obj):
         return Like.objects.filter(question=obj).count()
