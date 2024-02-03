@@ -63,7 +63,7 @@ class QuestionsAPIView(UpdateModelMixin,
                        DestroyModelMixin,
                        GenericAPIView):
     """질문 수정 / 삭제"""
-
+    # TODO: 빨리하면 넣는걸로
     # TODO: Permission 수정
     permission_classes = [AllowAny]
     queryset = Question.objects.all()

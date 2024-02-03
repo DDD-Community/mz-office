@@ -15,6 +15,8 @@ class QuestionSerializer(serializers.ModelSerializer):
     user_voted = serializers.SerializerMethodField()
     answer_ratio = serializers.SerializerMethodField()
 
+    # TODO: 응답 카운트 추가
+
     class Meta:
         model = Question
         fields = [

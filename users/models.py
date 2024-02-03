@@ -53,6 +53,7 @@ class UserModel(AbstractBaseUser):
     nickname = models.CharField(max_length=50, null=True, verbose_name='회원 닉네임')
     year = models.IntegerField(null=True, verbose_name='출생년도')
     job = models.CharField(max_length=50, null=True, verbose_name='직무')
+    generation = models.CharField(max_length=50, null=True, verbose_name='시대')
 
     is_active = models.BooleanField(default=True, verbose_name='계정 활성화 여부')
     is_admin = models.BooleanField(default=False, verbose_name='관리자 여부')
@@ -75,3 +76,19 @@ class UserModel(AbstractBaseUser):
         db_table = 'users'
         app_label = 'users'
         verbose_name_plural = '회원정보'
+
+    def save(self, *args, **kwargs):
+        # Determine generation based on the year
+        if self.year is not None:
+            if 1995 <= self.year <= 2022:
+                self.generation = "BB세대"
+            elif 1981 <= self.year <= 1996:
+                self.generation = "M세대"
+            elif 1965 <= self.year <= 1980:
+                self.generation = "X세대"
+            elif 1941 <= self.year <= 1964:
+                self.generation = "Boomer세대"
+            else:
+                self.generation = "기타세대"
+
+        super().save(*args, **kwargs)

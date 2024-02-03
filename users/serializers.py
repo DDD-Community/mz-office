@@ -109,4 +109,4 @@ class UserInfoSerializer(serializers.ModelSerializer):
 class UserInfoPhoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserModel
-        fields = ('phone',)
+        fields = ('nickname', 'year', 'job', 'generation')
