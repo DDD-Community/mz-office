@@ -13,9 +13,10 @@ class QuestionSerializer(serializers.ModelSerializer):
     like_count = serializers.SerializerMethodField()
     report_count = serializers.SerializerMethodField()
     user_voted = serializers.SerializerMethodField()
+    answer_count = serializers.SerializerMethodField()
     answer_ratio = serializers.SerializerMethodField()
 
-    # TODO: 응답 카운트 추가
+    # TODO: 응답 카운트 추가 
 
     class Meta:
         model = Question
@@ -26,8 +27,9 @@ class QuestionSerializer(serializers.ModelSerializer):
             'title', 
             'user_voted', 
             'question_a', 
-            'question_b', 
-            'answer_ratio', 
+            'question_b',  
+            'answer_count',
+            'answer_ratio',
             'like_count', 
             'report_count', 
             'create_at',
@@ -47,6 +49,9 @@ class QuestionSerializer(serializers.ModelSerializer):
         if user_id:
             return Answer.objects.filter(question=obj, user_id=user_id).exists()
         return False
+
+    def get_answer_count(self, obj):
+        return Answer.objects.filter(question=obj).count()
 
     def get_answer_ratio(self, obj):
         if self.get_user_voted(obj):
