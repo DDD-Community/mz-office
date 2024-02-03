@@ -243,7 +243,7 @@ SIMPLE_JWT = {
 
 AUTH_USER_MODEL = 'users.UserModel'
 AUTHENTICATION_BACKENDS = (
-    'users.lib.backends.SettingsBackend',
+    'users.backends.SettingsBackend',
     'django.contrib.auth.backends.ModelBackend',
 )
 # OAuth Setting End
