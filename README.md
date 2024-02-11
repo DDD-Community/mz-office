@@ -25,3 +25,21 @@ OAuth를 이용한 소셜 로그인 기능 사용
 
 ## 4. question
 메인 앱, mz-office에서 사용하는 질문 관련 앱 모음
+
+
+# Get Started
+## 도커 설치
+[Docker](https://www.docker.com/get-started) 설치
+
+## 서버 띄우기
+다음과 같이 make 커맨드를 실행합니다.
+
+```bash
+make up
+```
+
+```shell
+make build # 도커 이미지 업데이트가 필요한 경우 사용합니다.
+make shell # 서버를 띄우지 않고 같은 환경으로 쉘을 띄우고 싶을 때 사용합니다.
+make down # 떠 있는 컨테이너를 모두 내립니다.
+```

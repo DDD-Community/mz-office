@@ -9,6 +9,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from pathlib import Path
+from oauth.utils import KAKAO
 
 from .serializers import *
 from users.models import UserModel
@@ -56,9 +57,6 @@ def login_api(social_type: str, social_id: str, email: str=None, phone: str=None
 
     return response
 
-kakao_login_uri = "https://kauth.kakao.com/oauth/authorize"
-kakao_token_uri = "https://kauth.kakao.com/oauth/token"
-kakao_profile_uri = "https://kapi.kakao.com/v2/user/me"
 
 class KakaoLoginView(APIView):
     permission_classes = [AllowAny]
@@ -69,9 +67,9 @@ class KakaoLoginView(APIView):
 
         ---
         '''
-        client_id = get_secret("KAKAO_CLIENT_ID")
-        redirect_uri = get_secret("KAKAO_REDIRECT_URI")
-        uri = f"{kakao_login_uri}?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code"
+        client_id = KAKAO.CLIENT_ID
+        redirect_uri = KAKAO.RECIRECT_URI
+        uri = f"{KAKAO.LOGIN_URL}?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code"
         
         res = redirect(uri)
         return res
@@ -91,20 +89,21 @@ class KakaoCallbackView(APIView):
 
         # access_token 발급 요청
         code = data.get('code')
+
         if not code:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         request_data = {
             'grant_type': 'authorization_code',
-            'client_id': get_secret("KAKAO_CLIENT_ID"),
-            'redirect_uri': get_secret("KAKAO_REDIRECT_URI"),
-            'client_secret': get_secret("KAKAO_CLIENT_SECRET"),
+            'client_id': KAKAO.CLIENT_ID,
+            'redirect_uri': KAKAO.RECIRECT_URI,
+            'client_secret': KAKAO.CLIENT_SECRET,
             'code': code,
         }
         token_headers = {
             'Content-type': 'application/x-www-form-urlencoded;charset=utf-8'
         }
-        token_res = requests.post(kakao_token_uri, data=request_data, headers=token_headers)
+        token_res = requests.post(KAKAO.TOKEN_URL, data=request_data, headers=token_headers)
 
         token_json = token_res.json()
         access_token = token_json.get('access_token')
@@ -118,7 +117,7 @@ class KakaoCallbackView(APIView):
             "Authorization": access_token,
             "Content-type": "application/x-www-form-urlencoded;charset=utf-8",
         }
-        user_info_res = requests.get(kakao_profile_uri, headers=auth_headers)
+        user_info_res = requests.get(KAKAO.PROFILE_URL, headers=auth_headers)
         user_info_json = user_info_res.json()
 
         social_type = 'kakao'
@@ -128,88 +127,6 @@ class KakaoCallbackView(APIView):
         if not kakao_account:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         user_email = kakao_account.get('email')
-
-        # 회원가입 및 로그인
-        res = login_api(social_type=social_type, social_id=social_id, email=user_email)
-        return res
-
-
-naver_login_url = "https://nid.naver.com/oauth2.0/authorize"
-naver_token_url = "https://nid.naver.com/oauth2.0/token"
-naver_profile_url = "https://openapi.naver.com/v1/nid/me"
-
-class NaverLoginView(APIView):
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        '''
-        naver code 요청
-
-        ---
-        '''
-        client_id = settings.NAVER_CLIENT_ID
-        redirect_uri = settings.NAVER_REDIRECT_URI
-        state = settings.STATE
-        # state = get_token(request)
-
-        uri = f"{naver_login_url}?client_id={client_id}&redirect_uri={redirect_uri}&state={state}&response_type=code"
-        res = redirect(uri)
-        return res
-
-
-class NaverCallbackView(APIView):
-    permission_classes = [AllowAny]
-
-    @swagger_auto_schema(query_serializer=CallbackUserCSRFInfoSerializer)
-    def get(self, request):
-        '''
-        naver access_token 및 user_info 요청
-
-        ---
-        '''
-        data = request.query_params
-
-        # access_token 발급 요청
-        code = data.get('code')
-        user_state = data.get('state')
-        if (not code) or (user_state != settings.STATE):
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        request_data = {
-            'grant_type': 'authorization_code',
-            'client_id': settings.NAVER_CLIENT_ID,
-            'client_secret': settings.NAVER_CLIENT_SECRET,
-            'code': code,
-            'state': user_state,
-        }
-        token_headers = {
-            'Content-type': 'application/x-www-form-urlencoded;charset=utf-8'
-        }
-        token_res = requests.post(naver_token_url, data=request_data, headers=token_headers)
-
-        token_json = token_res.json()
-        access_token = token_json.get('access_token')
-
-        if not access_token:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        access_token = f"Bearer {access_token}"  # 'Bearer ' 마지막 띄어쓰기 필수
-
-        # naver 회원정보 요청
-        auth_headers = {
-            "X-Naver-Client-Id": settings.NAVER_CLIENT_ID,
-            "X-Naver-Client-Secret": settings.NAVER_CLIENT_SECRET,
-            "Authorization": access_token,
-            "Content-type": "application/x-www-form-urlencoded;charset=utf-8",
-        }
-        user_info_res = requests.get(naver_profile_url, headers=auth_headers)
-        user_info_json = user_info_res.json()
-        user_info = user_info_json.get('response')
-        if not user_info:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        social_type = 'naver'
-        social_id = f"{social_type}_{user_info.get('id')}"
-        user_email = user_info.get('email')
 
         # 회원가입 및 로그인
         res = login_api(social_type=social_type, social_id=social_id, email=user_email)
@@ -282,91 +199,6 @@ class GoogleCallbackView(APIView):
         social_type = 'google'
         social_id = f"{social_type}_{user_info_json.get('user_id')}"
         user_email = user_info_json.get('email')
-
-        # 회원가입 및 로그인
-        res = login_api(social_type=social_type, social_id=social_id, email=user_email)
-        return res
-
-
-facebook_graph_url = "https://graph.facebook.com/v12.0"
-facebook_login_url = "https://www.facebook.com/v12.0/dialog/oauth"
-facebook_token_url = f"{facebook_graph_url}/oauth/access_token"  
-facebook_debug_token_url = "https://graph.facebook.com/debug_token"
-facebook_profile_url = f"{facebook_graph_url}/me"  # 사용자 정보 요청
-
-class FacebookLoginView(APIView):
-    permission_classes = [AllowAny]
-
-    def get(self, reqeust):
-        '''
-        facebook code 요청
-
-        ---
-        '''
-        client_id = settings.FACEBOOK_APP_ID
-        redirect_uri = settings.FACEBOOK_REDIRECT_URI
-        state = settings.STATE
-
-        uri = f"{facebook_login_url}?client_id={client_id}&redirect_uri={redirect_uri}&state={state}&response_type=code&scope=email%20public_profile"
-
-        res = redirect(uri)
-        return res
-
-
-class FacebookCallbackView(APIView):
-    permission_classes = [AllowAny]
-
-    @swagger_auto_schema(query_serializer=CallbackUserInfoSerializer)
-    def get(self, request):
-        '''
-        facebook access_token 및 user_info 요청
-
-        ---
-        '''
-        data = request.query_params
-
-        code = data.get('code')
-        if not code:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        query_string = {
-            'client_id': settings.FACEBOOK_APP_ID,
-            'redirect_uri': settings.FACEBOOK_REDIRECT_URI,
-            'client_secret': settings.FACEBOOK_APP_SECRET,
-            'code': code,
-        }
-        token_res = requests.get(facebook_token_url, params=query_string)
-
-        token_json = token_res.json()
-        access_token = token_json.get('access_token')
-
-        if not access_token:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        # 엑세스 토큰 검사 및 계정 정보 조회
-        query_string = {
-            'input_token': access_token,
-            'access_token': f"{settings.FACEBOOK_APP_ID}|{settings.FACEBOOK_APP_SECRET}",
-        }
-        user_info_res = requests.get(facebook_debug_token_url, params=query_string)
-        user_info_json = user_info_res.json()
-
-        facebook_account = user_info_json.get('data')
-        if (not facebook_account) or (not facebook_account.get('is_valid')):
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        user_id = facebook_account.get('user_id')
-
-        query_string = {
-            'fields': 'email', # email,name 형식으로 사용가능
-            'access_token': access_token,
-        }
-        user_profile_res = requests.get(facebook_profile_url, params=query_string)
-        user_profile_json = user_profile_res.json()
-
-        social_type = 'facebook'
-        social_id = f"{social_type}_{user_id}"
-        user_email = user_profile_json.get('email')
 
         # 회원가입 및 로그인
         res = login_api(social_type=social_type, social_id=social_id, email=user_email)
