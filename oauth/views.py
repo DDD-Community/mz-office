@@ -16,19 +16,6 @@ from users.models import UserModel
 from users.views import LoginView, UserView
 from django.core.exceptions import ImproperlyConfigured
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-secret_file = os.path.join(BASE_DIR, 'secrets.json')
-
-with open(secret_file) as f:
-    secrets = json.loads(f.read())
-
-def get_secret(setting, secrets=secrets):
-    try:
-        return secrets[setting]
-    except KeyError:
-        error_msg = "Set the {} environment variable".format(setting)
-        raise ImproperlyConfigured(error_msg)
 
 
 def login_api(social_type: str, social_id: str, email: str=None, phone: str=None):
@@ -70,7 +57,7 @@ class KakaoLoginView(APIView):
         client_id = KAKAO.CLIENT_ID
         redirect_uri = KAKAO.RECIRECT_URI
         uri = f"{KAKAO.LOGIN_URL}?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code"
-        
+
         res = redirect(uri)
         return res
 
