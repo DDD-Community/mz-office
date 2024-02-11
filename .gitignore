@@ -4,6 +4,9 @@ secrets.json
 zappa_settings.json
 .zappa_settings.json
 
+# ENV
+*.env
+
 # Created by https://www.toptal.com/developers/gitignore/api/python,django,venv
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,django,venv
 
