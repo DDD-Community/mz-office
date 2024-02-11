@@ -77,6 +77,7 @@ class KakaoLoginView(APIView):
 
 class KakaoCallbackView(APIView):
     permission_classes = [AllowAny]
+    swagger_schema = None
 
     @swagger_auto_schema(query_serializer=CallbackUserInfoSerializer)
     def get(self, request):
