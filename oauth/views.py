@@ -9,26 +9,17 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from pathlib import Path
-from oauth.utils import KAKAO
+from oauth.utils import (
+    KAKAO,
+    GOOGLE,
+    APPLE,
+)
 
 from .serializers import *
 from users.models import UserModel
 from users.views import LoginView, UserView
 from django.core.exceptions import ImproperlyConfigured
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-secret_file = os.path.join(BASE_DIR, 'secrets.json')
-
-with open(secret_file) as f:
-    secrets = json.loads(f.read())
-
-def get_secret(setting, secrets=secrets):
-    try:
-        return secrets[setting]
-    except KeyError:
-        error_msg = "Set the {} environment variable".format(setting)
-        raise ImproperlyConfigured(error_msg)
 
 
 def login_api(social_type: str, social_id: str, email: str=None, phone: str=None):
@@ -70,14 +61,13 @@ class KakaoLoginView(APIView):
         client_id = KAKAO.CLIENT_ID
         redirect_uri = KAKAO.RECIRECT_URI
         uri = f"{KAKAO.LOGIN_URL}?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code"
-        
+
         res = redirect(uri)
         return res
 
 
 class KakaoCallbackView(APIView):
     permission_classes = [AllowAny]
-    swagger_schema = None
 
     @swagger_auto_schema(query_serializer=CallbackUserInfoSerializer)
     def get(self, request):
@@ -134,11 +124,6 @@ class KakaoCallbackView(APIView):
         return res
 
 
-google_login_url = "https://accounts.google.com/o/oauth2/v2/auth"
-google_scope = "https://www.googleapis.com/auth/userinfo.email"
-google_token_url = "https://oauth2.googleapis.com/token"
-google_profile_url = "https://www.googleapis.com/oauth2/v2/tokeninfo"
-
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -148,9 +133,9 @@ class GoogleLoginView(APIView):
 
         ---
         '''
-        client_id = settings.GOOGLE_CLIENT_ID
-        redirect_uri = settings.GOOGLE_REDIRECT_URI
-        uri = f"{google_login_url}?client_id={client_id}&redirect_uri={redirect_uri}&scope={google_scope}&response_type=code"
+        client_id = GOOGLE.CLIENT_ID
+        redirect_uri = GOOGLE.REDIRECT_URI
+        uri = f"{GOOGLE.LOGIN_URL}?client_id={client_id}&redirect_uri={redirect_uri}&scope={GOOGLE.SCOPE}&response_type=code"
 
         res = redirect(uri)
         return res
@@ -174,13 +159,13 @@ class GoogleCallbackView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         request_data = {
-            'client_id': settings.GOOGLE_CLIENT_ID,
-            'client_secret': settings.GOOGLE_SECRET,
+            'client_id': GOOGLE.CLIENT_ID,
+            'client_secret': GOOGLE.CLIENT_SECRET,
             'code': code,
             'grant_type': 'authorization_code',
-            'redirect_uri': settings.GOOGLE_REDIRECT_URI,
+            'redirect_uri': GOOGLE.REDIRECT_URI,
         }
-        token_res = requests.post(google_token_url, data=request_data)
+        token_res = requests.post(GOOGLE.TOKEN_URL, data=request_data)
 
         token_json = token_res.json()
         access_token = token_json['access_token']
@@ -192,7 +177,7 @@ class GoogleCallbackView(APIView):
         query_string = {
             'access_token': access_token
         }
-        user_info_res = requests.get(google_profile_url, params=query_string)
+        user_info_res = requests.get(GOOGLE.PROFILE_URL, params=query_string)
         user_info_json = user_info_res.json()
         if (user_info_res.status_code != 200) or (not user_info_json):
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -206,10 +191,6 @@ class GoogleCallbackView(APIView):
         return res
 
 
-apple_base_url = "https://appleid.apple.com"
-apple_auth_url = f"{apple_base_url}/auth/authorize"
-apple_token_url = f"{apple_base_url}/auth/token"
-
 class AppleLoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -220,10 +201,10 @@ class AppleLoginView(APIView):
         ---
         '''
         # APPLE_CLIENT_ID는 모바일 로그인시 Bundle ID, 웹 로그인시 Service ID를 사용한다.
-        client_id = settings.APPLE_CLIENT_ID
-        redirect_uri = settings.APPLE_REDIRECT_URI
+        client_id = APPLE.CLIENT_ID
+        redirect_uri = APPLE.REDIRECT_URI
 
-        uri = f"{apple_auth_url}?client_id={client_id}&&redirect_uri={redirect_uri}&response_type=code"
+        uri = f"{APPLE.AUTH_URL}?client_id={client_id}&&redirect_uri={redirect_uri}&response_type=code"
 
         res = redirect(uri)
         return res
@@ -238,21 +219,21 @@ class AppleCallbackView(APIView):
         '''
         headers = {
             'alg': 'ES256',
-            'kid': settings.APPLE_KEY_ID,
+            'kid': APPLE.KEY_ID,
         }
 
         payload = {
-            'iss': settings.APPLE_TEAM_ID,
+            'iss': APPLE.TEAM_ID,
             'iat': time.time(),
             'exp': time.time() + 600,  # 10분
-            'aud': apple_base_url,
-            'sub': settings.APPLE_CLIENT_ID,
+            'aud': APPLE.BASE_URL,
+            'sub': APPLE.CLIENT_ID,
         }
 
         client_secret = jwt.encode(
-            payload=payload, 
-            key=settings.APPLE_PRIVATE_KEY, 
-            algorithm='ES256', 
+            payload=payload,
+            key=APPLE.PRIVATE_KEY,
+            algorithm='ES256',
             headers=headers
         )
 
@@ -274,14 +255,14 @@ class AppleCallbackView(APIView):
 
         headers = {'Content-type': "application/x-www-form-urlencoded"}
         request_data = {
-            'client_id': settings.APPLE_CLIENT_ID,
+            'client_id': APPLE.CLIENT_ID,
             'client_secret': client_secret,
             'code': code,
             'grant_type': 'authorization_code',
-            'redirect_uri': settings.APPLE_REDIRECT_URI,
+            'redirect_uri': APPLE.REDIRECT_URI,
         }
         # client_secret 유효성 검사
-        res = requests.post(apple_token_url, data=request_data, headers=headers)
+        res = requests.post(APPLE.TOKEN_URL, data=request_data, headers=headers)
         response_json = res.json()
         id_token = response_json.get('id_token')
         if not id_token:
