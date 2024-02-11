@@ -49,10 +49,16 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 # Secrets Setting End
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEV = True
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
+
+
+# CORS
+CORS_EXPOSE_HEADERS = ['Content-Disposition']
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_ALLOW_ALL = True
+
 
 # Application definition
 
@@ -68,6 +74,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',
     'storages',
+    'corsheaders',
     # app
     'app',
     'question',
@@ -78,6 +85,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
