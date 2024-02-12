@@ -19,29 +19,33 @@ from users.permission import IsAdminOrReadOnly
 from .serializers import (
     QuestionSerializer,
     QuestionCreateSerializer,
+    AnswerSerializer,
     ReportSerializer,
     LikeSerializer,
     BlockSerializer,
 )
 from .models import (
     Question,
+    Answer,
     Report,
     Like,
     Block,
 )
+
 
 class CustomPageNumberPagination(PageNumberPagination):
     page_size_query_param = 'page_size'  # 페이지당 보여질 아이템 수를 파라미터로 받음
 
 class QuestionsListAPIView(ListModelMixin, GenericAPIView):
     """피드 목록"""
-    # TODO: Permission 수정
-    # TODO: 페이징 추가 
-    permission_classes = [AllowAny]
+    # TODO: 페이징 추가
+
     queryset = Question.objects.all().order_by('-id')
     serializer_class = QuestionSerializer
     pagination_class = CustomPageNumberPagination  # 페이징 설정 추가
-    
+    page_size = 10
+    max_page_size = 50
+
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context.update({"request": self.request})
@@ -52,11 +56,13 @@ class QuestionsListAPIView(ListModelMixin, GenericAPIView):
 
 class QuestionAPIView(CreateModelMixin, GenericAPIView):
     """질문 등록"""
-
-    # TODO: Permission 수정
-    permission_classes = [AllowAny]
     queryset = Question.objects.all()
     serializer_class = QuestionCreateSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
 
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
@@ -71,6 +77,11 @@ class QuestionsAPIView(UpdateModelMixin,
     permission_classes = [AllowAny]
     queryset = Question.objects.all()
     serializer_class = QuestionCreateSerializer
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
 
     def put(self, request, *args, **kwargs):
         """수정 기능 넣기로 했었나요...?"""
@@ -81,14 +92,32 @@ class QuestionsAPIView(UpdateModelMixin,
         return self.destroy(request, *args, **kwargs)
 
 
+class AnswerAPIView(CreateModelMixin,
+                       GenericAPIView):
+    """답변"""
+    queryset = Answer.objects.all()
+    serializer_class = AnswerSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
 class Report(CreateModelMixin, GenericAPIView):
     """신고하기"""
 
-    # TODO: Permission 수정
-    permission_classes = [AllowAny]
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
     
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
+
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
 
@@ -96,26 +125,29 @@ class Report(CreateModelMixin, GenericAPIView):
 class LikeView(CreateModelMixin, GenericAPIView):
     """좋아요 기능: 토글 방식으로 동작"""
 
-    # TODO: Permission 수정
-    permission_classes = [AllowAny]
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
     
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
+
     def post(self, request, *args, **kwargs):
-        user_id = 'random_user_1'
+        user_id = request.user.social_id
         question_id = self.kwargs["pk"]
 
         liked = self.get_queryset().filter(
             question_id=question_id,
             user_id=user_id
         )
-        
+
         if liked.exists():
             liked.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        
+
         serializer = self.get_serializer(data=request.data)
-        
+
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -126,11 +158,13 @@ class LikeView(CreateModelMixin, GenericAPIView):
 class Block(CreateModelMixin, GenericAPIView):
     """해당 게시글 사용자 차단하기: 추후에 user_id 기준으로만 요청하는 것으로 바꾸고 따로 빼도 될 것 같아요"""
 
-    # TODO: Permission 수정
-    permission_classes = [AllowAny]
     queryset = Block.objects.all()
     serializer_class = BlockSerializer
     
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
 
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)

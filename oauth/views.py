@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from users.models import UserModel
 from pathlib import Path
 from oauth.utils import (
     KAKAO,
@@ -135,7 +136,7 @@ class GoogleLoginView(APIView):
         '''
         client_id = GOOGLE.CLIENT_ID
         redirect_uri = GOOGLE.REDIRECT_URI
-        uri = f"{GOOGLE.LOGIN_URL}?client_id={client_id}&redirect_uri={redirect_uri}&scope={GOOGLE.SCOPE}&response_type=code"
+        uri = f"{GOOGLE.LOGIN_URI}?client_id={client_id}&redirect_uri={redirect_uri}&scope={GOOGLE.SCOPE}&response_type=code"
 
         res = redirect(uri)
         return res
@@ -165,7 +166,7 @@ class GoogleCallbackView(APIView):
             'grant_type': 'authorization_code',
             'redirect_uri': GOOGLE.REDIRECT_URI,
         }
-        token_res = requests.post(GOOGLE.TOKEN_URL, data=request_data)
+        token_res = requests.post(GOOGLE.TOKEN_URI, data=request_data)
 
         token_json = token_res.json()
         access_token = token_json['access_token']
@@ -177,7 +178,7 @@ class GoogleCallbackView(APIView):
         query_string = {
             'access_token': access_token
         }
-        user_info_res = requests.get(GOOGLE.PROFILE_URL, params=query_string)
+        user_info_res = requests.get(GOOGLE.PROFILE_URI, params=query_string)
         user_info_json = user_info_res.json()
         if (user_info_res.status_code != 200) or (not user_info_json):
             return Response(status=status.HTTP_400_BAD_REQUEST)
