@@ -108,6 +108,12 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
 
 class UserInfoPhoneSerializer(serializers.ModelSerializer):
+    
+    def validate_nickname(self, attrs):
+        if UserModel.objects.filter(nickname=attrs).exists():
+            raise serializers.ValidationError({'message': 'nickname already exists'})
+        return attrs
+    
     class Meta:
         model = UserModel
         fields = ('nickname', 'year', 'job', 'generation')
