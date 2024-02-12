@@ -118,8 +118,12 @@ WSGI_APPLICATION = 'project.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_NAME'),
+        'USER': os.getenv('POSTGRES_USER'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+        'HOST': os.getenv('POSTGRES_HOST'),
+        'PORT': os.getenv('POSTGRES_PORT'),
     }
 }
 
@@ -192,17 +196,20 @@ STATICFILES_DIRS = [
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {'format': '%(asctime)s %(levelname)s: %(message)s'},
+    },
     'handlers': {
-        'file': {
+        'console': {
             'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': 'catalina.log',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
         },
     },
     'loggers': {
         'django.request': {
-            'handlers': ['file'],
-            'level': 'ERROR',  # 에러 레벨 이상의 로그만 기록
+            'handlers': ['console'],
+            'level': 'DEBUG', # 모든 로그 모니터링
             'propagate': False,
         },
     },
@@ -278,7 +285,6 @@ SWAGGER_SETTINGS = {
             'name': 'Authorization'
         }
     },
-    
     'LOGIN_URL': 'users:login',
     'LOGOUT_URL': 'users:logout',
     'USE_SESSION_AUTH': False,
