@@ -19,7 +19,7 @@ class Kakao:
     LOGIN_URL = "https://kauth.kakao.com/oauth/authorize"
     TOKEN_URL = "https://kauth.kakao.com/oauth/token"
     PROFILE_URL = "https://kapi.kakao.com/v2/user/me"
-    
+
     def __str__(self):
         return 'apple'
 
@@ -27,17 +27,11 @@ class Google:
     CLIENT_ID = GOOGLE_CLIENT_ID
     CLIENT_SECRET = GOOGLE_SECRET
     REDIRECT_URI = GOOGLE_REDIRECT_URI
-    LOGIN_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+    LOGIN_URI = "https://accounts.google.com/o/oauth2/v2/auth"
     SCOPE = "https://www.googleapis.com/auth/userinfo.email"
-    TOKEN_URL = "https://oauth2.googleapis.com/token"
-    PROFILE_URL = "https://www.googleapis.com/oauth2/v2/tokeninfo"
+    TOKEN_URI = "https://oauth2.googleapis.com/token"
+    PROFILE_URI = "https://www.googleapis.com/oauth2/v2/tokeninfo"
 
-    # Original
-    # google_login_url = "https://accounts.google.com/o/oauth2/v2/auth"
-    # google_scope = "https://www.googleapis.com/auth/userinfo.email"
-    # google_token_url = "https://oauth2.googleapis.com/token"
-    # google_profile_url = "https://www.googleapis.com/oauth2/v2/tokeninfo"
-    
     def __str__(self):
         return 'google'
 
