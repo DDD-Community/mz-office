@@ -41,6 +41,8 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     def get_answer_ratio(self, obj):
         total_votes = Answer.objects.filter(question=obj).count()
+        if total_votes == 0:
+            return {'A': 0, 'B': 0}
         ratio_a = (Answer.objects.filter(question=obj, user_choice='A').count() / total_votes) * 100
         ratio_b = (Answer.objects.filter(question=obj, user_choice='B').count() / total_votes) * 100
         return {'A': ratio_a, 'B': ratio_b}
