@@ -155,7 +155,7 @@ class LikeView(CreateModelMixin, GenericAPIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class Block(CreateModelMixin, GenericAPIView):
+class Block(ListModelMixin, CreateModelMixin, GenericAPIView):
     """해당 게시글 사용자 차단하기: 추후에 user_id 기준으로만 요청하는 것으로 바꾸고 따로 빼도 될 것 같아요"""
 
     queryset = Block.objects.all()
@@ -165,6 +165,9 @@ class Block(CreateModelMixin, GenericAPIView):
         context = super().get_serializer_context()
         context.update({"request": self.request})
         return context
+    
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
