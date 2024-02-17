@@ -39,7 +39,7 @@ class CustomPageNumberPagination(PageNumberPagination):
 class QuestionsListAPIView(ListModelMixin, GenericAPIView):
     """피드 목록"""
     # TODO: 페이징 추가
-
+    permission_classes = [AllowAny]
     queryset = Question.objects.all().order_by('-id')
     serializer_class = QuestionSerializer
     pagination_class = CustomPageNumberPagination  # 페이징 설정 추가
@@ -88,7 +88,7 @@ class QuestionsAPIView(UpdateModelMixin,
         return self.update(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
-        """삭제 기능은... 넣나요..?"""
+        """질문 삭제"""
         return self.destroy(request, *args, **kwargs)
 
 
