@@ -50,7 +50,7 @@ class Block(models.Model):
     """차단 기록 테이블(UserModel 단위)"""
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     user_id = models.CharField(max_length=100, verbose_name='차단하는 사용자')
-    blocked_user_id = models.CharField(verbose_name='차단된 사용자')
+    blocked_user_id = models.CharField(max_length=100, verbose_name='차단된 사용자')
     create_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
 

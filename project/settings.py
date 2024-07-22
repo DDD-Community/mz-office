@@ -17,14 +17,22 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # # Secrets Setting
-# import os, json
-# from django.core.exceptions import ImproperlyConfigured
+import os, json
+from django.core.exceptions import ImproperlyConfigured
 
-# secret_file = os.path.join(BASE_DIR, 'secrets.json')
+secret_file = os.path.join(BASE_DIR, 'secrets.json')
 
-# with open(secret_file) as f:
-#     secrets = json.loads(f.read())
+with open(secret_file) as f:
+    secrets = json.loads(f.read())
 
+def get_secret(setting, secrets=secrets):
+    try:
+        return secrets[setting]
+    except KeyError:
+        error_msg = "Set the {} environment variable".format(setting)
+        raise ImproperlyConfigured(error_msg)
+
+# Secrets Setting with dotenv
 # def os.getenv(setting, secrets=secrets):
 #     try:
 #         return secrets[setting]
@@ -32,20 +40,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 #         error_msg = "Set the {} environment variable".format(setting)
 #         raise ImproperlyConfigured(error_msg)
 
+# import os
+# from dotenv import load_dotenv
 
-# Secrets Setting with dotenv
-
-import os
-from dotenv import load_dotenv
-
-load_dotenv(
-    dotenv_path="local.env",
-    verbose=True
-)
-
+# load_dotenv(
+#     dotenv_path="local.env",
+#     verbose=True
+# )
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+# SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+SECRET_KEY = get_secret("DJANGO_SECRET_KEY")
+
 # Secrets Setting End
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -116,17 +122,23 @@ WSGI_APPLICATION = 'project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.getenv('POSTGRES_NAME'),
+#         'USER': os.getenv('POSTGRES_USER'),
+#         'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+#         'HOST': os.getenv('POSTGRES_HOST'),
+#         'PORT': os.getenv('POSTGRES_PORT'),
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_NAME'),
-        'USER': os.getenv('POSTGRES_USER'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
-        'HOST': os.getenv('POSTGRES_HOST'),
-        'PORT': os.getenv('POSTGRES_PORT'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

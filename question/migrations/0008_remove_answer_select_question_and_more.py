@@ -40,7 +40,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='block',
             name='blocked_user_id',
-            field=models.CharField(verbose_name='차단된 사용자'),
+            field=models.CharField(max_length=100, verbose_name='차단된 사용자'),
         ),
         migrations.AlterField(
             model_name='block',
