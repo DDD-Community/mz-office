@@ -181,28 +181,39 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # AWS Setting
-AWS_REGION = os.getenv("AWS_REGION")
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
+# AWS_REGION = os.getenv("AWS_REGION")
+# AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+# AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+# AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
 
-DEFAULT_FILE_STORAGE = 'project.storages.MediaStorage'
-STATICFILES_STORAGE = 'project.storages.StaticStorage'
+# DEFAULT_FILE_STORAGE = 'project.storages.MediaStorage'
+# STATICFILES_STORAGE = 'project.storages.StaticStorage'
 
-MEDIAFILES_LOCATION = 'media'
-STATICFILES_LOCATION = 'static'
+# MEDIAFILES_LOCATION = 'media'
+# STATICFILES_LOCATION = 'static'
 
-AWS_S3_CUSTOM_DOMAIN = '%s.s3.%s.amazonaws.com' % (
-    AWS_STORAGE_BUCKET_NAME, AWS_REGION)
-AWS_DEFAULT_ACL = 'public-read'
-AWS_LOCATION = 'static'
+# AWS_S3_CUSTOM_DOMAIN = '%s.s3.%s.amazonaws.com' % (
+#     AWS_STORAGE_BUCKET_NAME, AWS_REGION)
+# AWS_DEFAULT_ACL = 'public-read'
+# AWS_LOCATION = 'static'
 
-STATIC_URL = 'https://%s/%s/' % (AWS_S3_CUSTOM_DOMAIN, AWS_LOCATION)
+# STATIC_URL = 'https://%s/%s/' % (AWS_S3_CUSTOM_DOMAIN, AWS_LOCATION)
+
+# STATICFILES_DIRS = [
+#     os.path.join(BASE_DIR, 'static')
+# ]
+# AWS Setting End
+
+# Static File Settings Start
+STATIC_URL = '/static/'
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static')
+    os.path.join(BASE_DIR, 'static'),
 ]
-# AWS Setting End
+# Static File Settings End
+
 
 # Loggin Setting Start
 LOGGING = {
