@@ -1,5 +1,6 @@
 from rest_framework import status
 from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -138,3 +139,11 @@ class MerberView(APIView):
         request.user.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class JobListAPIView(GenericAPIView):
+    """Job 목록"""
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        jobs = ["IT", "기획자", "디자이너", "백엔드 개발자", "프론트엔드 개발자", "iOS 개발자", "Android 개발자"]
+        return Response(jobs)
