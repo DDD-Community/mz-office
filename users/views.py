@@ -10,8 +10,27 @@ from drf_yasg import openapi
 from .serializers import *
 from .permission import LoginRequired
 
-user_retrieve_response = openapi.Response('', UserInfoSerializer)
+# Define the response schema for 200 responses
+nickname_check_response_schema = openapi.Schema(
+    type=openapi.TYPE_OBJECT,
+    properties={
+        'exists': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='닉네임 응답 여부 (True: 사용 가능, False: 사용 불가)'),
+        'message': openapi.Schema(type=openapi.TYPE_STRING, description='닉네임 유효성 검사 (공백 불가)')
+    }
+)
 
+# Define the response object for 200 responses
+nickname_check_response = openapi.Response(
+    description="Nickname check response",
+    schema=nickname_check_response_schema,
+    examples={
+        "application/json": {"exists": False, "message": "사용 불가능한 닉네임 입니다."},
+        "application/json": {"exists": True, "message": "사용 가능한 닉네임 입니다."},
+        "application/json": {"exists": False, "message": "닉네임에 공백이 들어갈 수 없습니다."}
+    }
+)
+
+user_retrieve_response = openapi.Response('', UserInfoSerializer)
 
 class UserView(APIView):
     permission_classes = [AllowAny]
@@ -145,5 +164,30 @@ class JobListAPIView(GenericAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
-        jobs = ["IT", "기획자", "디자이너", "백엔드 개발자", "프론트엔드 개발자", "iOS 개발자", "Android 개발자"]
+        jobs = ["경영", "광고", "기획", "개발", "데이터", "디자인", "마케팅", "방송", "운영", "이커머스", "게임", "금융", "회계", "인사", "영업", "물류", "연구", "의료", "제약", "엔지니어링", "생산품질", "교육", "법률", "공공", "서비스", "기타"]
         return Response(jobs)
+
+class NicknameCheckAPIView(APIView):
+    """Nickname 유효성 체크"""
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        manual_parameters=[openapi.Parameter('nickname', openapi.IN_QUERY, description="닉네임", type=openapi.TYPE_STRING)],
+        responses={
+            200: nickname_check_response,
+            400: openapi.Response(description="Bad Request", examples={"application/json": {"error": "닉네임을 입력해주세요."}}),
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        nickname = request.query_params.get('nickname')
+
+        if not nickname:
+            return Response({"error": "닉네임을 입력해주세요."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if ' ' in nickname or nickname.strip() != nickname:
+            return Response({"exists": False, "message": "닉네임에 공백이 들어갈 수 없습니다."}, status=status.HTTP_200_OK)
+
+        if UserModel.objects.filter(nickname=nickname).exists():
+            return Response({"exists": False, "message": "사용 불가능한 닉네임 입니다."}, status=status.HTTP_200_OK)
+        else:
+            return Response({"exists": True, "message": "사용 가능한 닉네임 입니다."}, status=status.HTTP_200_OK)

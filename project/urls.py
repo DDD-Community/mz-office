@@ -10,11 +10,11 @@ import app.views
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="Your API",
+        title="MzOffice API",
         default_version='v1',
-        description="Your API description",
+        description="MzOffice API description",
         terms_of_service="https://www.yourapp.com/terms/",
-        contact=openapi.Contact(email="contact@yourapp.com"),
+        contact=openapi.Contact(email="jjs9536@gamil.com"),
         license=openapi.License(name="Your License"),
     ),
     public=True,
