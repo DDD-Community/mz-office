@@ -159,13 +159,22 @@ class MerberView(APIView):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class JobSerializer(serializers.Serializer):
+    data = serializers.ListField(
+        child=serializers.CharField()
+    )
+
 class JobListAPIView(GenericAPIView):
     """Job 목록"""
     permission_classes = [AllowAny]
+    serializer_class = JobSerializer  # serializer_class 추가
 
     def get(self, request, *args, **kwargs):
         jobs = ["경영", "광고", "기획", "개발", "데이터", "디자인", "마케팅", "방송", "운영", "이커머스", "게임", "금융", "회계", "인사", "영업", "물류", "연구", "의료", "제약", "엔지니어링", "생산품질", "교육", "법률", "공공", "서비스", "기타"]
-        return Response(jobs)
+        serializer = self.get_serializer(data={'data': jobs})
+        serializer.is_valid()
+        return Response(serializer.data)
+
 
 class NicknameCheckAPIView(APIView):
     """Nickname 유효성 체크"""
