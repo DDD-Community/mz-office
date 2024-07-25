@@ -279,7 +279,7 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
 
     'ALGORITHM': 'HS512',
-    'SIGNING_KEY': '',
+    'SIGNING_KEY': get_secret("DJANGO_SECRET_KEY"),
 
     'AUTH_HEADER_TYPES': ('Bearer',),  # 인증 헤더 유형
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',  # 인증 헤더 명칭

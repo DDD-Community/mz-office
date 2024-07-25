@@ -3,6 +3,8 @@ secrets.json
 .secrets.json
 zappa_settings.json
 .zappa_settings.json
+AuthKey_AJIS2.p8
+.AuthKey_AJIS2.p8
 
 # ENV
 *.env
