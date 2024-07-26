@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -214,8 +214,10 @@ STATICFILES_DIRS = [
 ]
 # Static File Settings End
 
-
 # Loggin Setting Start
+if not os.path.exists(os.path.join(BASE_DIR, 'logs')):
+    os.makedirs(os.path.join(BASE_DIR, 'logs'))
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -228,11 +230,17 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', f'logs-{datetime.now().strftime("%Y-%m-%d")}.log'),
+            'formatter': 'simple',
+        },
     },
     'loggers': {
         'django.request': {
-            'handlers': ['console'],
-            'level': 'DEBUG', # 모든 로그 모니터링
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',  # 모든 로그 모니터링
             'propagate': False,
         },
     },
