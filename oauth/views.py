@@ -23,13 +23,13 @@ from django.core.exceptions import ImproperlyConfigured
 
 
 
-def login_api(social_type: str, social_id: str, email: str = None, phone: str = None):
+def login_api(social_type: str, social_id: str, email: str=None, phone: str=None):
     '''
     회원가입 및 로그인
     '''
     login_view = LoginView()
     try:
-        user = UserModel.objects.get(social_id=social_id)
+        UserModel.objects.get(social_id=social_id)
         data = {
             'social_id': social_id,
             'email': email,
@@ -47,14 +47,7 @@ def login_api(social_type: str, social_id: str, email: str = None, phone: str = 
 
         response = login_view.object(data=data) if login.status_code == 201 else login
 
-    # Ensure consistent response format
-    response_data = {
-        "social_id": social_id,
-        "access_token": response.data.get("access_token"),
-        "refresh_token": response.data.get("refresh_token"),
-    }
-    return Response(response_data, status=response.status_code)
-
+    return response
 
 
 class KakaoLoginView(APIView):
@@ -129,15 +122,7 @@ class KakaoCallbackView(APIView):
 
         # 회원가입 및 로그인
         res = login_api(social_type=social_type, social_id=social_id, email=user_email)
-
-        # Ensure consistent response format
-        response_data = {
-            "social_id": social_id,
-            "access_token": res.data.get("access_token"),
-            "refresh_token": res.data.get("refresh_token"),
-        }
-        return Response(response_data, status=res.status_code)
-
+        return res
 
 
 class GoogleLoginView(APIView):
