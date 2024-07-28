@@ -42,4 +42,4 @@ make up
 make build # 도커 이미지 업데이트가 필요한 경우 사용합니다.
 make shell # 서버를 띄우지 않고 같은 환경으로 쉘을 띄우고 싶을 때 사용합니다.
 make down # 떠 있는 컨테이너를 모두 내립니다.
-```
+```# openai-chat
