@@ -31,14 +31,24 @@ from .models import (
     Like,
     Block,
 )
+from project.utils import custom_response 
 
 
 class CustomPageNumberPagination(PageNumberPagination):
     page_size_query_param = 'page_size'  # 페이지당 보여질 아이템 수를 파라미터로 받음
 
+    def get_paginated_response(self, data):
+        return custom_response(
+            data={
+                'count': self.page.paginator.count,
+                'next': self.get_next_link(),
+                'previous': self.get_previous_link(),
+                'results': data
+            }
+        )
+
 class QuestionsListAPIView(ListModelMixin, GenericAPIView):
     """피드 목록"""
-    # TODO: 페이징 추가
     permission_classes = [AllowAny]
     queryset = Question.objects.all().order_by('-id')
     serializer_class = QuestionSerializer
@@ -52,7 +62,16 @@ class QuestionsListAPIView(ListModelMixin, GenericAPIView):
         return context
 
     def get(self, request, *args, **kwargs):
-        return self.list(self, request, *args, **kwargs)
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return custom_response(
+            data=serializer.data
+        )
 
 class QuestionAPIView(CreateModelMixin, GenericAPIView):
     """질문 등록"""
@@ -65,15 +84,14 @@ class QuestionAPIView(CreateModelMixin, GenericAPIView):
         return context
 
     def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
+        response = self.create(request, *args, **kwargs)
+        return custom_response(
+            data=response.data
+        )
 
 
-class QuestionsAPIView(UpdateModelMixin,
-                       DestroyModelMixin,
-                       GenericAPIView):
+class QuestionsAPIView(UpdateModelMixin, DestroyModelMixin, GenericAPIView):
     """질문 수정 / 삭제"""
-    # TODO: 빨리하면 넣는걸로 
-    # TODO: Permission 수정
     permission_classes = [AllowAny]
     queryset = Question.objects.all()
     serializer_class = QuestionCreateSerializer
@@ -84,16 +102,19 @@ class QuestionsAPIView(UpdateModelMixin,
         return context
 
     def put(self, request, *args, **kwargs):
-        """수정 기능 넣기로 했었나요...?"""
-        return self.update(request, *args, **kwargs)
+        response = self.update(request, *args, **kwargs)
+        return custom_response(
+            data=response.data
+        )
 
     def delete(self, request, *args, **kwargs):
-        """질문 삭제"""
-        return self.destroy(request, *args, **kwargs)
+        response = self.destroy(request, *args, **kwargs)
+        return custom_response(
+            data=response.data
+        )
 
 
-class AnswerAPIView(CreateModelMixin,
-                       GenericAPIView):
+class AnswerAPIView(CreateModelMixin, GenericAPIView):
     """답변"""
     queryset = Answer.objects.all()
     serializer_class = AnswerSerializer
@@ -104,7 +125,10 @@ class AnswerAPIView(CreateModelMixin,
         return context
 
     def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
+        response = self.create(request, *args, **kwargs)
+        return custom_response(
+            data=response.data
+        )
 
 
 class Report(CreateModelMixin, GenericAPIView):
@@ -119,7 +143,10 @@ class Report(CreateModelMixin, GenericAPIView):
         return context
 
     def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
+        response = self.create(request, *args, **kwargs)
+        return custom_response(
+            data=response.data
+        )
 
 
 class LikeView(CreateModelMixin, GenericAPIView):
@@ -144,19 +171,26 @@ class LikeView(CreateModelMixin, GenericAPIView):
 
         if liked.exists():
             liked.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return custom_response(
+            )
 
         serializer = self.get_serializer(data=request.data)
 
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return custom_response(
+                data=serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         self.perform_create(serializer)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return custom_response(
+            data=serializer.data,
+            status=status.HTTP_201_CREATED
+        )
 
 
 class Block(ListModelMixin, CreateModelMixin, GenericAPIView):
-    """해당 게시글 사용자 차단하기: 추후에 user_id 기준으로만 요청하는 것으로 바꾸고 따로 빼도 될 것 같아요"""
+    """해당 게시글 사용자 차단하기"""
 
     queryset = Block.objects.all()
     serializer_class = BlockSerializer
@@ -167,7 +201,13 @@ class Block(ListModelMixin, CreateModelMixin, GenericAPIView):
         return context
     
     def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
+        response = self.list(request, *args, **kwargs)
+        return custom_response(
+            data=response.data
+        )
 
     def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
+        response = self.create(request, *args, **kwargs)
+        return custom_response(
+            data=response.data
+        )

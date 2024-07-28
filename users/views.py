@@ -2,13 +2,14 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from .serializers import *
 from .permission import LoginRequired
+
+from project.utils import custom_response 
 
 # Define the response schema for 200 responses
 nickname_check_response_schema = openapi.Schema(
@@ -39,12 +40,12 @@ class UserView(APIView):
         serializer = CreateUserSerializer(data=data)
 
         if not serializer.is_valid():
-            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return custom_response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         user = serializer.validated_data
         serializer.create(validated_data=user)
 
-        return Response(data=user, status=status.HTTP_201_CREATED)
+        return custom_response(data=user, status=status.HTTP_201_CREATED)
 
     def post(self, request):
         '''
@@ -61,11 +62,11 @@ class LoginView(APIView):
     def object(self, data: dict):
         serializer = LoginSerializer(data=data)
         if not serializer.is_valid():
-            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return custom_response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         user = serializer.validated_data
 
-        return Response(data=user, status=status.HTTP_200_OK)
+        return custom_response(data=user, status=status.HTTP_200_OK)
 
     def post(self, request):
         '''
@@ -89,11 +90,11 @@ class LogoutView(APIView):
         '''
         serializer = LogoutSerializer(data=request.data)
         if not serializer.is_valid():
-            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return custom_response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         serializer.validated_data.blacklist()
 
-        return Response(status=status.HTTP_200_OK)
+        return custom_response(status=status.HTTP_200_OK)
 
 
 class TokenRefreshView(APIView):
@@ -109,10 +110,10 @@ class TokenRefreshView(APIView):
         serializer = RefreshTokenSerializer(data=request.data)
 
         if not serializer.is_valid():
-            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return custom_response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         token = serializer.validated_data
 
-        return Response(data=token, status=status.HTTP_201_CREATED)
+        return custom_response(data=token, status=status.HTTP_201_CREATED)
 
 
 class MerberView(APIView):
@@ -130,7 +131,7 @@ class MerberView(APIView):
         serializer = UserInfoSerializer(request.user)
         response_data = serializer.data
 
-        return Response(data=response_data, status=status.HTTP_200_OK)
+        return custom_response(data=response_data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(request_body=UserInfoPhoneSerializer, responses={200: ''})
     def patch(self, request, *args, **kwargs):
@@ -143,11 +144,11 @@ class MerberView(APIView):
 
         serializer = UserInfoPhoneSerializer(request.user, data=data, partial=True)
         if not serializer.is_valid():
-            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return custom_response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         serializer.save()
 
-        return Response(status=status.HTTP_200_OK)
+        return custom_response(status=status.HTTP_200_OK)
 
     def delete(self, request, *args, **kwargs):
         '''
@@ -157,7 +158,7 @@ class MerberView(APIView):
         '''
         request.user.delete()
 
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return custom_response(status=status.HTTP_204_NO_CONTENT)
 
 class JobSerializer(serializers.Serializer):
     data = serializers.ListField(
@@ -173,7 +174,7 @@ class JobListAPIView(GenericAPIView):
         jobs = ["경영", "광고", "기획", "개발", "데이터", "디자인", "마케팅", "방송", "운영", "이커머스", "게임", "금융", "회계", "인사", "영업", "물류", "연구", "의료", "제약", "엔지니어링", "생산품질", "교육", "법률", "공공", "서비스", "기타"]
         serializer = self.get_serializer(data={'data': jobs})
         serializer.is_valid()
-        return Response(serializer.data)
+        return custom_response(data=serializer.data)
 
 
 class NicknameCheckAPIView(APIView):
@@ -191,12 +192,12 @@ class NicknameCheckAPIView(APIView):
         nickname = request.query_params.get('nickname')
 
         if not nickname:
-            return Response({"error": "닉네임을 입력해주세요."}, status=status.HTTP_400_BAD_REQUEST)
+            return custom_response(data={"error": "닉네임을 입력해주세요."}, status=status.HTTP_400_BAD_REQUEST)
 
         if ' ' in nickname or nickname.strip() != nickname:
-            return Response({"exists": False, "message": "닉네임에 공백이 들어갈 수 없습니다."}, status=status.HTTP_200_OK)
+            return custom_response(data={"exists": False, "message": "닉네임에 공백이 들어갈 수 없습니다."}, status=status.HTTP_200_OK)
 
         if UserModel.objects.filter(nickname=nickname).exists():
-            return Response({"exists": False, "message": "사용 불가능한 닉네임 입니다."}, status=status.HTTP_200_OK)
+            return custom_response(data={"exists": False, "message": "사용 불가능한 닉네임 입니다."}, status=status.HTTP_200_OK)
         else:
-            return Response({"exists": True, "message": "사용 가능한 닉네임 입니다."}, status=status.HTTP_200_OK)
+            return custom_response(data={"exists": True, "message": "사용 가능한 닉네임 입니다."}, status=status.HTTP_200_OK)
