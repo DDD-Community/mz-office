@@ -20,13 +20,15 @@ from .serializers import *
 from users.models import UserModel
 from users.views import LoginView, UserView
 from django.core.exceptions import ImproperlyConfigured
+import logging
 
-
+logger = logging.getLogger('django.request')
 
 def login_api(social_type: str, social_id: str, email: str=None, phone: str=None):
     '''
     회원가입 및 로그인
     '''
+    logger.debug("login_api 호출됨 - social_type: %s, social_id: %s, email: %s", social_type, social_id, email)
     login_view = LoginView()
     try:
         UserModel.objects.get(social_id=social_id)
@@ -34,9 +36,10 @@ def login_api(social_type: str, social_id: str, email: str=None, phone: str=None
             'social_id': social_id,
             'email': email,
         }
+        logger.debug("UserModel 조회 성공 - social_id: %s", social_id)
         response = login_view.object(data=data)
-
     except UserModel.DoesNotExist:
+        logger.debug("UserModel 조회 실패 - 신규 사용자, social_id: %s", social_id)
         data = {
             'social_type': social_type,
             'social_id': social_id,
@@ -44,9 +47,10 @@ def login_api(social_type: str, social_id: str, email: str=None, phone: str=None
         }
         user_view = UserView()
         login = user_view.get_or_create_user(data=data)
-
+        logger.debug("신규 사용자 생성 결과 - status_code: %s", login.status_code)
         response = login_view.object(data=data) if login.status_code == 201 else login
 
+    logger.debug("login_api 응답 - status_code: %s", response.status_code)
     return response
 
 
@@ -63,6 +67,7 @@ class KakaoLoginView(APIView):
         redirect_uri = KAKAO.RECIRECT_URI
         uri = f"{KAKAO.LOGIN_URL}?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code"
 
+        logger.debug("KakaoLoginView GET 호출 - 리다이렉트 URI: %s", uri)
         res = redirect(uri)
         return res
 
@@ -77,12 +82,15 @@ class KakaoCallbackView(APIView):
 
         ---
         '''
+        logger.debug("KakaoCallbackView GET 호출 - request query params: %s", request.query_params)
         data = request.query_params
 
         # access_token 발급 요청
         code = data.get('code')
+        logger.debug("KakaoCallbackView GET - code: %s", code)
 
         if not code:
+            logger.debug("KakaoCallbackView GET - code 없음")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         request_data = {
@@ -95,12 +103,15 @@ class KakaoCallbackView(APIView):
         token_headers = {
             'Content-type': 'application/x-www-form-urlencoded;charset=utf-8'
         }
+        logger.debug("Kakao access_token 요청 - request_data: %s", request_data)
         token_res = requests.post(KAKAO.TOKEN_URL, data=request_data, headers=token_headers)
+        logger.debug("Kakao access_token 응답 - status_code: %s, response: %s", token_res.status_code, token_res.text)
 
         token_json = token_res.json()
         access_token = token_json.get('access_token')
 
         if not access_token:
+            logger.debug("Kakao access_token 응답 실패 - access_token 없음")
             return Response(status=status.HTTP_400_BAD_REQUEST)
         access_token = f"Bearer {access_token}"  # 'Bearer ' 마지막 띄어쓰기 필수
 
@@ -109,7 +120,10 @@ class KakaoCallbackView(APIView):
             "Authorization": access_token,
             "Content-type": "application/x-www-form-urlencoded;charset=utf-8",
         }
+        logger.debug("Kakao 회원정보 요청 - access_token: %s", access_token)
         user_info_res = requests.get(KAKAO.PROFILE_URL, headers=auth_headers)
+        logger.debug("Kakao 회원정보 응답 - status_code: %s, response: %s", user_info_res.status_code, user_info_res.text)
+
         user_info_json = user_info_res.json()
 
         social_type = 'kakao'
@@ -117,12 +131,16 @@ class KakaoCallbackView(APIView):
 
         kakao_account = user_info_json.get('kakao_account')
         if not kakao_account:
+            logger.debug("Kakao 회원정보 응답 실패 - kakao_account 없음")
             return Response(status=status.HTTP_400_BAD_REQUEST)
         user_email = kakao_account.get('email')
 
         # 회원가입 및 로그인
+        logger.debug("login_api 호출 전 - social_type: %s, social_id: %s, email: %s", social_type, social_id, user_email)
         res = login_api(social_type=social_type, social_id=social_id, email=user_email)
+        logger.debug("login_api 응답 - status_code: %s", res.status_code)
         return res
+
 
 
 class GoogleLoginView(APIView):
