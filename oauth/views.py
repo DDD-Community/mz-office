@@ -85,35 +85,40 @@ class KakaoCallbackView(APIView):
         logger.debug("7. KakaoCallbackView GET 호출 - request query params: %s", request.query_params)
         data = request.query_params
 
-        # access_token 발급 요청
+        # iOS에서 전달된 accessToken 확인
+        access_token = data.get('accessToken')
         code = data.get('code')
         logger.debug("8. KakaoCallbackView GET - code: %s", code)
 
-        if not code:
-            logger.debug("9. KakaoCallbackView GET - code 없음")
+        if code:
+            # access_token 발급 요청
+            request_data = {
+                'grant_type': 'authorization_code',
+                'client_id': KAKAO.CLIENT_ID,
+                'redirect_uri': KAKAO.RECIRECT_URI,
+                'client_secret': KAKAO.CLIENT_SECRET,
+                'code': code,
+            }
+            token_headers = {
+                'Content-type': 'application/x-www-form-urlencoded;charset=utf-8'
+            }
+            logger.debug("10. Kakao access_token 요청 - request_data: %s", request_data)
+            token_res = requests.post(KAKAO.TOKEN_URL, data=request_data, headers=token_headers)
+            logger.debug("11. Kakao access_token 응답 - status_code: %s, response: %s", token_res.status_code, token_res.text)
+
+            token_json = token_res.json()
+            access_token = token_json.get('access_token')
+
+            if not access_token:
+                logger.debug("12. Kakao access_token 응답 실패 - access_token 없음")
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            access_token = f"Bearer {access_token}"  # 'Bearer ' 마지막 띄어쓰기 필수
+
+        elif not access_token:
+            logger.debug("9. KakaoCallbackView GET - code와 accessToken 없음")
             return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        request_data = {
-            'grant_type': 'authorization_code',
-            'client_id': KAKAO.CLIENT_ID,
-            'redirect_uri': KAKAO.RECIRECT_URI,
-            'client_secret': KAKAO.CLIENT_SECRET,
-            'code': code,
-        }
-        token_headers = {
-            'Content-type': 'application/x-www-form-urlencoded;charset=utf-8'
-        }
-        logger.debug("10. Kakao access_token 요청 - request_data: %s", request_data)
-        token_res = requests.post(KAKAO.TOKEN_URL, data=request_data, headers=token_headers)
-        logger.debug("11. Kakao access_token 응답 - status_code: %s, response: %s", token_res.status_code, token_res.text)
-
-        token_json = token_res.json()
-        access_token = token_json.get('access_token')
-
-        if not access_token:
-            logger.debug("12. Kakao access_token 응답 실패 - access_token 없음")
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        access_token = f"Bearer {access_token}"  # 'Bearer ' 마지막 띄어쓰기 필수
+        else:
+            access_token = f"Bearer {access_token}"  # iOS에서 전달된 accessToken 사용
 
         # kakao 회원정보 요청
         auth_headers = {
@@ -140,6 +145,7 @@ class KakaoCallbackView(APIView):
         res = login_api(social_type=social_type, social_id=social_id, email=user_email)
         logger.debug("17. login_api 응답 - status_code: %s", res.status_code)
         return res
+
 
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
