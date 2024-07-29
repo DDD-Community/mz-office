@@ -88,9 +88,9 @@ class KakaoCallbackView(APIView):
         # iOS에서 전달된 accessToken 확인
         access_token = data.get('accessToken')
         code = data.get('code')
-        logger.debug("8. KakaoCallbackView GET - code: %s", code)
+        logger.debug("8. KakaoCallbackView GET - code: %s, accessToken: %s", code, access_token)
 
-        if code:
+        if not access_token and code:
             # access_token 발급 요청
             request_data = {
                 'grant_type': 'authorization_code',
