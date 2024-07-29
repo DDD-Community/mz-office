@@ -85,10 +85,10 @@ class KakaoCallbackView(APIView):
         logger.debug("7. KakaoCallbackView GET 호출 - request query params: %s", request.query_params)
         data = request.query_params
 
-        # iOS에서 전달된 accessToken 확인
-        access_token = data.get('accessToken')
+        # iOS에서 전달된 access_token 확인
+        access_token = data.get('access_token')
         code = data.get('code')
-        logger.debug("8. KakaoCallbackView GET - code: %s, accessToken: %s", code, access_token)
+        logger.debug("8. KakaoCallbackView GET - code: %s, access_token: %s", code, access_token)
 
         if not access_token and code:
             # access_token 발급 요청
@@ -115,10 +115,10 @@ class KakaoCallbackView(APIView):
             access_token = f"Bearer {access_token}"  # 'Bearer ' 마지막 띄어쓰기 필수
 
         elif not access_token:
-            logger.debug("9. KakaoCallbackView GET - code와 accessToken 없음")
+            logger.debug("9. KakaoCallbackView GET - code와 access_token 없음")
             return Response(status=status.HTTP_400_BAD_REQUEST)
         else:
-            access_token = f"Bearer {access_token}"  # iOS에서 전달된 accessToken 사용
+            access_token = f"Bearer {access_token}"  # iOS에서 전달된 access_token 사용
 
         # kakao 회원정보 요청
         auth_headers = {
