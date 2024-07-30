@@ -33,6 +33,7 @@ nickname_check_response = openapi.Response(
 
 user_retrieve_response = openapi.Response('', UserInfoSerializer)
 
+# todo Responses 업데이트 된 User 정보 전달
 class UserView(APIView):
     permission_classes = [AllowAny]
 
