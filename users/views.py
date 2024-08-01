@@ -147,8 +147,11 @@ class MerberView(APIView):
             return custom_response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         serializer.save()
+        
+        # 수정된 유저 정보를 직렬화하여 반환
+        response_data = UserInfoSerializer(request.user).data
 
-        return custom_response(status=status.HTTP_200_OK)
+        return custom_response(data=response_data, status=status.HTTP_200_OK)
 
     def delete(self, request, *args, **kwargs):
         '''
@@ -159,6 +162,7 @@ class MerberView(APIView):
         request.user.delete()
 
         return custom_response(status=status.HTTP_204_NO_CONTENT)
+
 
 class JobSerializer(serializers.Serializer):
     data = serializers.ListField(
