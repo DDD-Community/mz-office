@@ -57,6 +57,7 @@ class UserModel(AbstractBaseUser):
 
     is_active = models.BooleanField(default=True, verbose_name='계정 활성화 여부')
     is_admin = models.BooleanField(default=False, verbose_name='관리자 여부')
+    is_first_login = models.BooleanField(default=True, verbose_name='최초 로그인 여부')  # 추가된 필드
 
     role = models.ForeignKey(
         UserRoleModel, 
