@@ -20,6 +20,7 @@ from .serializers import *
 from users.models import UserModel
 from users.views import LoginView, UserView
 from django.core.exceptions import ImproperlyConfigured
+from datetime import datetime, timedelta
 
 def login_api(social_type: str, social_id: str, email: str=None, phone: str=None):
     '''
@@ -132,8 +133,17 @@ class KakaoCallbackView(APIView):
 
         # 만약 `res`가 Response 객체라면, 데이터에 토큰 정보를 추가합니다.
         if isinstance(res, Response):
-            res.data['expires_in'] = expires_in
-            res.data['refresh_token_expires_in'] = refresh_token_expires_in
+            current_time = datetime.utcnow()
+            access_token_expiry_time = current_time + timedelta(seconds=expires_in)
+            refresh_token_expiry_time = current_time + timedelta(seconds=refresh_token_expires_in)
+
+            is_expires = current_time >= access_token_expiry_time
+            is_refresh_token_expires = current_time >= refresh_token_expiry_time
+
+            res.data['data']['expires_in'] = expires_in
+            res.data['data']['refresh_token_expires_in'] = refresh_token_expires_in
+            res.data['data']['is_expires'] = is_expires
+            res.data['data']['is_refresh_token_expires'] = is_refresh_token_expires
 
         return res
 
