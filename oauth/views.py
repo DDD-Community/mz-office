@@ -20,12 +20,16 @@ from .serializers import *
 from users.models import UserModel
 from users.views import LoginView, UserView
 from django.core.exceptions import ImproperlyConfigured
+import logging
 from datetime import datetime, timedelta
+
+logger = logging.getLogger('django.request')
 
 def login_api(social_type: str, social_id: str, email: str=None, phone: str=None):
     '''
     회원가입 및 로그인
     '''
+    logger.debug("1. login_api 호출됨 - social_type: %s, social_id: %s, email: %s", social_type, social_id, email)
     login_view = LoginView()
     try:
         UserModel.objects.get(social_id=social_id)
@@ -33,8 +37,10 @@ def login_api(social_type: str, social_id: str, email: str=None, phone: str=None
             'social_id': social_id,
             'email': email,
         }
+        logger.debug("2. UserModel 조회 성공 - social_id: %s", social_id)
         response = login_view.object(data=data)
     except UserModel.DoesNotExist:
+        logger.debug("3. UserModel 조회 실패 - 신규 사용자, social_id: %s", social_id)
         data = {
             'social_type': social_type,
             'social_id': social_id,
@@ -42,8 +48,10 @@ def login_api(social_type: str, social_id: str, email: str=None, phone: str=None
         }
         user_view = UserView()
         login = user_view.get_or_create_user(data=data)
+        logger.debug("4. 신규 사용자 생성 결과 - status_code: %s", login.status_code)
         response = login_view.object(data=data) if login.status_code == 201 else login
 
+    logger.debug("5. login_api 응답 - status_code: %s", response.status_code)
     return response
 
 
@@ -60,6 +68,7 @@ class KakaoLoginView(APIView):
         redirect_uri = KAKAO.RECIRECT_URI
         uri = f"{KAKAO.LOGIN_URL}?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code"
 
+        logger.debug("6. KakaoLoginView GET 호출 - 리다이렉트 URI: %s", uri)
         res = redirect(uri)
         return res
 
@@ -74,11 +83,13 @@ class KakaoCallbackView(APIView):
 
         ---
         '''
+        logger.debug("7. KakaoCallbackView GET 호출 - request query params: %s", request.query_params)
         data = request.query_params
 
         # iOS에서 전달된 access_token 확인
         access_token = data.get('access_token')
         code = data.get('code')
+        logger.debug("8. KakaoCallbackView GET - code: %s, access_token: %s", code, access_token)
 
         expires_in = None
         refresh_token_expires_in = None
@@ -95,7 +106,9 @@ class KakaoCallbackView(APIView):
             token_headers = {
                 'Content-type': 'application/x-www-form-urlencoded;charset=utf-8'
             }
+            logger.debug("10. Kakao access_token 요청 - request_data: %s", request_data)
             token_res = requests.post(KAKAO.TOKEN_URL, data=request_data, headers=token_headers)
+            logger.debug("11. Kakao access_token 응답 - status_code: %s, response: %s", token_res.status_code, token_res.text)
 
             token_json = token_res.json()
             access_token = token_json.get('access_token')
@@ -103,10 +116,12 @@ class KakaoCallbackView(APIView):
             refresh_token_expires_in = token_json.get('refresh_token_expires_in')
 
             if not access_token:
+                logger.debug("12. Kakao access_token 응답 실패 - access_token 없음")
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             access_token = f"Bearer {access_token}"  # 'Bearer ' 마지막 띄어쓰기 필수
 
         elif not access_token:
+            logger.debug("9. KakaoCallbackView GET - code와 access_token 없음")
             return Response(status=status.HTTP_400_BAD_REQUEST)
         else:
             access_token = f"Bearer {access_token}"  # iOS에서 전달된 access_token 사용
@@ -116,7 +131,9 @@ class KakaoCallbackView(APIView):
             "Authorization": access_token,
             "Content-type": "application/x-www-form-urlencoded;charset=utf-8",
         }
+        logger.debug("13. Kakao 회원정보 요청 - access_token: %s", access_token)
         user_info_res = requests.get(KAKAO.PROFILE_URL, headers=auth_headers)
+        logger.debug("14. Kakao 회원정보 응답 - status_code: %s, response: %s", user_info_res.status_code, user_info_res.text)
 
         user_info_json = user_info_res.json()
 
@@ -125,11 +142,14 @@ class KakaoCallbackView(APIView):
 
         kakao_account = user_info_json.get('kakao_account')
         if not kakao_account:
+            logger.debug("15. Kakao 회원정보 응답 실패 - kakao_account 없음")
             return Response(status=status.HTTP_400_BAD_REQUEST)
         user_email = kakao_account.get('email')
 
         # 회원가입 및 로그인
+        logger.debug("16. login_api 호출 전 - social_type: %s, social_id: %s, email: %s", social_type, social_id, user_email)
         res = login_api(social_type=social_type, social_id=social_id, email=user_email)
+        logger.debug("17. login_api 응답 - status_code: %s", res.status_code)
 
         # 만약 `res`가 Response 객체라면, 데이터에 토큰 정보를 추가합니다.
         if isinstance(res, Response):
