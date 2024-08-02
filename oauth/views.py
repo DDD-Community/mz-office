@@ -78,11 +78,6 @@ class KakaoCallbackView(APIView):
 
     @swagger_auto_schema(query_serializer=CallbackUserInfoSerializer)
     def get(self, request):
-        '''
-        kakao access_token 및 user_info 요청
-
-        ---
-        '''
         logger.debug("7. KakaoCallbackView GET 호출 - request query params: %s", request.query_params)
         data = request.query_params
 
@@ -118,6 +113,12 @@ class KakaoCallbackView(APIView):
             if not access_token:
                 logger.debug("12. Kakao access_token 응답 실패 - access_token 없음")
                 return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            # expires_in 또는 refresh_token_expires_in이 None인 경우 처리
+            if expires_in is None or refresh_token_expires_in is None:
+                logger.error("Kakao API response missing 'expires_in' or 'refresh_token_expires_in': %s", token_json)
+                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={'error': 'Invalid token response'})
+
             access_token = f"Bearer {access_token}"  # 'Bearer ' 마지막 띄어쓰기 필수
 
         elif not access_token:
