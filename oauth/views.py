@@ -86,8 +86,8 @@ class KakaoCallbackView(APIView):
         code = data.get('code')
         logger.debug("8. KakaoCallbackView GET - code: %s, access_token: %s", code, access_token)
 
-        expires_in = None
-        refresh_token_expires_in = None
+        expires_in = 0
+        refresh_token_expires_in = 0
 
         if not access_token and code:
             # access_token 발급 요청
@@ -113,11 +113,6 @@ class KakaoCallbackView(APIView):
             if not access_token:
                 logger.debug("12. Kakao access_token 응답 실패 - access_token 없음")
                 return Response(status=status.HTTP_400_BAD_REQUEST)
-
-            # expires_in 또는 refresh_token_expires_in이 None인 경우 처리
-            if expires_in is None or refresh_token_expires_in is None:
-                logger.error("Kakao API response missing 'expires_in' or 'refresh_token_expires_in': %s", token_json)
-                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={'error': 'Invalid token response'})
 
             access_token = f"Bearer {access_token}"  # 'Bearer ' 마지막 띄어쓰기 필수
 
