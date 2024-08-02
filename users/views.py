@@ -59,17 +59,6 @@ class UserView(APIView):
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
-    authentication_classes = [JWTAuthentication]
-
-    def authenticate_with_token(self, request):
-        # 엑세스 토큰으로 인증
-        user = request.user
-        if not user.is_authenticated:
-            return custom_response(data={"error": "Invalid or expired access token. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
-
-        # 유효한 토큰인 경우 유저 정보 반환
-        serializer = UserInfoSerializer(user)
-        return custom_response(data=serializer.data, status=status.HTTP_200_OK)
 
     def authenticate_with_credentials(self, data: dict):
         # 사용자 자격 증명으로 인증
@@ -82,11 +71,19 @@ class LoginView(APIView):
 
         return custom_response(data={"user": user, "tokens": tokens}, status=status.HTTP_200_OK)
 
+    def authenticate_with_token(self, request):
+        # 엑세스 토큰으로 인증
+        user = request.user
+        if not user.is_authenticated:
+            return custom_response(data={"error": "Invalid or expired access token"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        serializer = UserInfoSerializer(user)
+        return custom_response(data=serializer.data, status=status.HTTP_200_OK)
+
     def generate_tokens_for_user(self, user):
         # 엑세스 및 리프레시 토큰 생성
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-        refresh_token = str(refresh)
+        access_token = "generated_access_token"  # JWT 또는 다른 방법으로 생성
+        refresh_token = "generated_refresh_token"  # 리프레시 토큰 생성
 
         return {"access": access_token, "refresh": refresh_token}
 
@@ -98,14 +95,10 @@ class LoginView(APIView):
         '''
         # 헤더에 엑세스 토큰이 있는 경우
         if 'Authorization' in request.headers:
-            try:
-                return self.authenticate_with_token(request)
-            except (InvalidToken, TokenError):
-                return custom_response(data={"error": "Invalid or expired access token. Logging out."}, status=status.HTTP_401_UNAUTHORIZED)
+            return self.authenticate_with_token(request)
 
         # 그렇지 않은 경우 자격 증명으로 로그인
         return self.authenticate_with_credentials(data=request.data)
-
 
 class LogoutView(APIView):
     permission_classes = [LoginRequired]
