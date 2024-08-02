@@ -102,9 +102,8 @@ class RefreshTokenSerializer(serializers.Serializer):
 class UserInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserModel
-        fields = ('social_id', 'social_type', 'email', 'phone', 'created_at', 'last_login', 'nickname', 'year', 'job', 'generation')
+        fields = ('social_id', 'social_type', 'email', 'phone', 'created_at', 'last_login', 'nickname', 'year', 'job', 'generation', 'is_first_login')
         read_only_fields = ('social_id', 'social_type', 'email', 'created_at', 'last_login')
-
 
 
 class UserInfoPhoneSerializer(serializers.ModelSerializer):
