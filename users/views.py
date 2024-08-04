@@ -92,9 +92,17 @@ class LogoutView(APIView):
         if not serializer.is_valid():
             return custom_response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        # 사용자를 블랙리스트 처리하거나 토큰 무효화
         serializer.validated_data.blacklist()
 
-        return custom_response(status=status.HTTP_200_OK)
+        # 사용자 정보 가져오기
+        user = request.user
+
+        # 사용자 정보를 직렬화
+        user_serializer = UserInfoSerializer(user)
+
+        # 사용자 정보와 함께 응답 반환
+        return custom_response(data=user_serializer.data, status=status.HTTP_200_OK)
 
 
 class TokenRefreshView(APIView):
