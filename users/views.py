@@ -171,6 +171,43 @@ class MerberView(APIView):
 
         return custom_response(status=status.HTTP_204_NO_CONTENT)
 
+# Serializer for verifying token request
+class TokenVerifySerializer(serializers.Serializer):
+    token = serializers.CharField(write_only=True, required=True, help_text="JWT 토큰")
+
+class TokenVerifyView(APIView):
+    '''
+    토큰 검증 API
+    '''
+    permission_classes = [AllowAny]
+    authentication_classes = []  # 인증 클래스를 비워두어 인증 없이 접근 가능하도록 설정
+
+    @swagger_auto_schema(
+        request_body=TokenVerifySerializer,
+        responses={
+            200: openapi.Response(description="토큰 유효", examples={"application/json": {"valid": True}}),
+            401: openapi.Response(description="토큰 무효", examples={"application/json": {"valid": False, "error": "Invalid token"}}),
+        }
+    )
+    def post(self, request):
+        '''
+        토큰의 유효성을 검증
+
+        ---
+        '''
+        serializer = TokenVerifySerializer(data=request.data)
+        if not serializer.is_valid():
+            return custom_response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        token = serializer.validated_data['token']
+
+        try:
+            # 토큰의 유효성을 검증
+            UntypedToken(token)
+            return custom_response(data={"valid": True}, status=status.HTTP_200_OK)
+        except (InvalidToken, TokenError) as e:
+            return custom_response(data={"valid": False, "error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 class JobSerializer(serializers.Serializer):
     data = serializers.ListField(

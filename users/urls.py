@@ -10,4 +10,5 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('jobs/', JobListAPIView.as_view(), name='job_list'),
     path('nickname-check/', NicknameCheckAPIView.as_view(), name='nickname_check'),
+    path('verify/', TokenVerifyView.as_view(), name='token_verify'),
 ]
