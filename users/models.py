@@ -81,8 +81,7 @@ class UserModel(AbstractBaseUser):
     def save(self, *args, **kwargs):
         # Determine generation based on the year
         if self.year is not None:
-            if 
-            1955 <= self.year <= 1964:
+            if 1955 <= self.year <= 1964:
                 self.generation = "베이비붐 세대"
             elif 1965 <= self.year <= 1980:
                 self.generation = "X 세대"

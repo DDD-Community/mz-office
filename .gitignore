@@ -5,6 +5,10 @@ zappa_settings.json
 .zappa_settings.json
 AuthKey_AJIS2.p8
 .AuthKey_AJIS2.p8
+mz-office.pem
+.mz-office.pem
+deploy.sh
+.deploy.sh
 
 # ENV
 *.env
