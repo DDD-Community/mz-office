@@ -95,3 +95,14 @@ class UserModel(AbstractBaseUser):
                 self.generation = "기타 세대"
 
         super().save(*args, **kwargs)
+
+class UserWithdrawalReason(models.Model):
+    user = models.ForeignKey(UserModel, on_delete=models.CASCADE, verbose_name='소셜사용자', related_name='withdrawal_reasons')
+    reason = models.TextField(verbose_name='탈퇴 사유')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='작성일자')
+
+    class Meta:
+        managed = True
+        db_table = 'user_withdrawal_reasons'
+        app_label = 'users'
+        verbose_name_plural = '탈퇴 사유'

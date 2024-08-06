@@ -116,3 +116,6 @@ class UserInfoPhoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserModel
         fields = ('nickname', 'year', 'job', 'generation')
+
+class WithdrawalReasonSerializer(serializers.Serializer):
+    reason = serializers.CharField(required=True, allow_blank=False, help_text='탈퇴 사유')

@@ -8,6 +8,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework_simplejwt.tokens import UntypedToken
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 
 from .serializers import *
 from .permission import LoginRequired
@@ -131,6 +132,8 @@ class MerberView(APIView):
     '''
     계정 정보
     '''
+    permission_classes = [IsAuthenticated]
+
     @swagger_auto_schema(responses={200: user_retrieve_response})
     def get(self, request):
         '''
@@ -158,21 +161,32 @@ class MerberView(APIView):
             return custom_response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         serializer.save()
-        
+
         # 수정된 유저 정보를 직렬화하여 반환
         response_data = UserInfoSerializer(request.user).data
 
         return custom_response(data=response_data, status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(request_body=WithdrawalReasonSerializer, responses={204: ''})
     def delete(self, request, *args, **kwargs):
         '''
-        계정 삭제
+        계정 탈퇴
 
         ---
+        탈퇴 사유를 입력받아 저장한 후 계정을 삭제합니다.
         '''
+        # 탈퇴 사유를 시리얼라이저로 검증
+        serializer = WithdrawalReasonSerializer(data=request.data)
+        if not serializer.is_valid():
+            return custom_response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # 탈퇴 사유 저장
+        UserWithdrawalReason.objects.create(user=request.user, reason=serializer.validated_data['reason'])
+
+        # 사용자 계정 삭제
         request.user.delete()
 
-        return custom_response(status=status.HTTP_204_NO_CONTENT)
+        return custom_response(data={"status": True, "message": "회원 탈퇴가 완료되었습니다."}, status=status.HTTP_204_NO_CONTENT)
 
 # Serializer for verifying token request
 class TokenVerifySerializer(serializers.Serializer):
