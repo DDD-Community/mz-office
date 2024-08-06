@@ -97,12 +97,7 @@ class UserModel(AbstractBaseUser):
         super().save(*args, **kwargs)
 
 class UserWithdrawalReason(models.Model):
-    user = models.ForeignKey(
-        'UserModel',
-        on_delete=models.CASCADE,
-        verbose_name='소셜사용자',
-        related_name='withdrawal_reasons'
-    )
+    social_id = models.CharField(max_length=100, verbose_name='소셜사용자_id', null=False, default="")  # 외래 키 대신 소셜 ID를 직접 저장
     reason = models.TextField(verbose_name='탈퇴 사유')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='작성일자')
 
@@ -113,4 +108,4 @@ class UserWithdrawalReason(models.Model):
         verbose_name_plural = '탈퇴 사유'
 
     def __str__(self):
-        return f"{self.user.social_id} - {self.reason[:20]}"  # 소셜 ID와 사유 요약 출력
+        return f"{self.social_id} - {self.reason[:20]}"  # 소셜 ID와 사유 요약 출력

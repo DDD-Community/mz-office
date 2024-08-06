@@ -127,7 +127,6 @@ class TokenRefreshView(APIView):
 
         return custom_response(data=token, status=status.HTTP_201_CREATED)
 
-
 class MerberView(APIView):
     '''
     계정 정보
@@ -181,14 +180,14 @@ class MerberView(APIView):
         if not serializer.is_valid():
             return custom_response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # 현재 인증된 사용자 정보 가져오기
-        user = request.user
+        # 현재 인증된 사용자 정보에서 소셜 ID 추출
+        social_id = request.user.social_id  # JWT 토큰을 통해 인증된 사용자 객체
 
         # 탈퇴 사유 저장
-        UserWithdrawalReason.objects.create(user=user, reason=serializer.validated_data['reason'])
+        UserWithdrawalReason.objects.create(social_id=social_id, reason=serializer.validated_data['reason'])
 
         # 사용자 계정 삭제
-        user.delete()
+        request.user.delete()
 
         return custom_response(data={"status": True, "message": "회원 탈퇴가 완료되었습니다."}, status=status.HTTP_204_NO_CONTENT)
 
