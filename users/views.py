@@ -180,13 +180,13 @@ class TokenVerifyView(APIView):
     토큰 검증 API
     '''
     permission_classes = [AllowAny]
-    authentication_classes = []  # 인증 클래스를 비워두어 인증 없이 접근 가능하도록 설정
+    authentication_classes = [JWTAuthentication]  # JWT 인증 클래스를 사용하여 토큰 자동 검증
 
     @swagger_auto_schema(
-        request_body=TokenVerifySerializer,
         responses={
             200: openapi.Response(description="토큰 유효", examples={"application/json": {"valid": True}}),
-            401: openapi.Response(description="토큰 무효", examples={"application/json": {"valid": False, "error": "Invalid token"}}),
+            401: openapi.Response(description="토큰 무효", examples={"application/json": {"valid": False, "error": "유효하지 않은 토큰입니다."}}),
+            400: openapi.Response(description="헤더 오류", examples={"application/json": {"error": "토큰이 필요합니다."}})
         }
     )
     def post(self, request):
@@ -195,18 +195,25 @@ class TokenVerifyView(APIView):
 
         ---
         '''
-        serializer = TokenVerifySerializer(data=request.data)
-        if not serializer.is_valid():
-            return custom_response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        auth_header = request.headers.get('Authorization')
 
-        token = serializer.validated_data['token']
+        if auth_header is None:
+            return custom_response(
+                data={"valid": False, "error": "토큰이 필요합니다."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
-            # 토큰의 유효성을 검증
-            UntypedToken(token)
+            # request.user로 인해 토큰의 유효성을 이미 검증합니다.
+            user = request.user
+
+            # 유효한 토큰일 경우
             return custom_response(data={"valid": True}, status=status.HTTP_200_OK)
         except (InvalidToken, TokenError) as e:
-            return custom_response(data={"valid": False, "error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+            return custom_response(
+                data={"valid": False, "error": "유효하지 않은 토큰입니다."},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
 
 
 class JobSerializer(serializers.Serializer):
