@@ -198,13 +198,13 @@ class TokenVerifyView(APIView):
     토큰 검증 API
     '''
     permission_classes = [AllowAny]
-    authentication_classes = []  # JWTAuthentication 대신 직접 토큰을 검증합니다.
+    authentication_classes = [JWTAuthentication]  # JWTAuthentication 사용
 
     @swagger_auto_schema(
         responses={
-            200: openapi.Response(description="토큰 유효", examples={"application/json": {"valid": True}}),
-            401: openapi.Response(description="토큰 무효", examples={"application/json": {"valid": False, "error": "유효하지 않은 토큰입니다."}}),
-            400: openapi.Response(description="헤더 오류", examples={"application/json": {"error": "토큰이 필요합니다."}})
+            200: openapi.Response(description="토큰 유효", examples={"application/json": {"status": True, "message": "유효한 토큰 입니다."}}),
+            401: openapi.Response(description="토큰 무효", examples={"application/json": {"status": False, "message": "유효하지 않은 토큰입니다."}}),
+            400: openapi.Response(description="헤더 오류", examples={"application/json": {"status": False, "message": "토큰이 필요합니다."}})
         }
     )
     def post(self, request):
@@ -232,17 +232,28 @@ class TokenVerifyView(APIView):
             # Bearer {token}에서 토큰 부분만 추출
             token = auth_header.split(' ')[1]
 
-            # 토큰의 유효성을 직접 검증
+            # UntypedToken으로 직접 토큰의 유효성을 검증하고 request.user를 통해 유저 확인
             UntypedToken(token)
-            return custom_response(data={"status": True, "message": "유효한 토큰 입니다."}, status=status.HTTP_200_OK)
 
-        except (InvalidToken, TokenError) as e:
+            if not request.user or not request.user.is_authenticated:
+                raise InvalidToken("유효하지 않은 토큰입니다.")
+
+            # 유저 정보가 있을 경우
+            serializer = UserInfoSerializer(request.user)
+            user_data = serializer.data
+
+            return custom_response(
+                data={"status": True, "message": "유효한 토큰입니다.", "user": user_data},
+                status=status.HTTP_200_OK
+            )
+
+        except (InvalidToken, TokenError):
             # 커스텀 예외 메시지 반환
             return custom_response(
                 data={"status": False, "message": "유효하지 않은 토큰입니다."},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-        except Exception as e:
+        except Exception:
             # 기타 모든 예외 처리
             return custom_response(
                 data={"status": False, "message": "유효하지 않은 토큰입니다."},
