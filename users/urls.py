@@ -11,4 +11,7 @@ urlpatterns = [
     path('jobs/', JobListAPIView.as_view(), name='job_list'),
     path('nickname-check/', NicknameCheckAPIView.as_view(), name='nickname_check'),
     path('verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('block/', BlockUserView.as_view(), name='block_user'),
+    path('blocks/', BlockListView.as_view(), name='block_list'),
+    path('block/<str:blocked_user_id>/', UnblockUserView.as_view(), name='unblock_user'),
 ]

@@ -307,3 +307,85 @@ class NicknameCheckAPIView(APIView):
             return custom_response(data={"exists": False, "message": "사용 불가능한 닉네임 입니다."}, status=status.HTTP_200_OK)
         else:
             return custom_response(data={"exists": True, "message": "사용 가능한 닉네임 입니다."}, status=status.HTTP_200_OK)
+        
+        
+class BlockListView(APIView):
+    """
+    차단한 목록 보기
+    """
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    @swagger_auto_schema(
+        responses={
+            200: openapi.Response(
+                description="차단한 사용자 목록",
+                examples={"application/json": {"blocked_users": ["user1", "user2", "user3"]}}
+            )
+        }
+    )
+    def get(self, request):
+        user_id = request.user.social_id
+        blocked_users = Block.objects.filter(user_id=user_id)
+        blocked_user_ids = blocked_users.values_list('blocked_user_id', flat=True)
+
+        return custom_response(data={"blocked_users": blocked_user_ids}, status=status.HTTP_200_OK)
+    
+class BlockUserView(APIView):
+    """
+    유저 차단하기
+    """
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'question_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='차단할 게시글의 ID'),
+                'blocked_user_id': openapi.Schema(type=openapi.TYPE_STRING, description='차단된 사용자의 ID')
+            }
+        ),
+        responses={
+            200: openapi.Response(description="유저 차단 성공", examples={"application/json": {"status": True, "message": "유저가 성공적으로 차단되었습니다."}}),
+            400: openapi.Response(description="Bad Request", examples={"application/json": {"status": False, "message": "잘못된 요청입니다."}}),
+        }
+    )
+    def post(self, request):
+        user_id = request.user.social_id
+        question_id = request.data.get('question_id')
+        blocked_user_id = request.data.get('blocked_user_id')
+
+        if not question_id or not blocked_user_id:
+            return custom_response(data={"status": False, "message": "question_id와 blocked_user_id를 제공해야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+        Block.objects.create(
+            question=question_id,
+            user_id=user_id,
+            blocked_user_id=blocked_user_id
+        )
+
+        return custom_response(data={"status": True, "message": "유저가 성공적으로 차단되었습니다."}, status=status.HTTP_200_OK)
+    
+class UnblockUserView(APIView):
+    """
+    유저 차단 해제하기
+    """
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    @swagger_auto_schema(
+        responses={
+            200: openapi.Response(description="유저 차단 해제 성공", examples={"application/json": {"status": True, "message": "유저 차단이 해제되었습니다."}}),
+            400: openapi.Response(description="Bad Request", examples={"application/json": {"status": False, "message": "차단 기록이 존재하지 않습니다."}})
+        }
+    )
+    def delete(self, request, blocked_user_id):
+        user_id = request.user.social_id
+
+        try:
+            block_instance = Block.objects.get(user_id=user_id, blocked_user_id=blocked_user_id)
+            block_instance.delete()
+            return custom_response(data={"status": True, "message": "유저 차단이 해제되었습니다."}, status=status.HTTP_200_OK)
+        except Block.DoesNotExist:
+            return custom_response(data={"status": False, "message": "차단 기록이 존재하지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)

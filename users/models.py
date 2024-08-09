@@ -109,3 +109,15 @@ class UserWithdrawalReason(models.Model):
 
     def __str__(self):
         return f"{self.social_id} - {self.reason[:20]}"  # 소셜 ID와 사유 요약 출력
+    
+class Block(models.Model):
+    """차단 기록 테이블(UserModel 단위)"""
+    question = models.IntegerField(null=True, verbose_name='차단 한 게시글')
+    user_id = models.CharField(max_length=100, verbose_name='차단하는 사용자')
+    blocked_user_id = models.CharField(max_length=100, verbose_name='차단된 사용자')
+    block_yn = models.CharField(max_length=2, verbose_name='Y: 차단, N: 차단해제', default='Y')
+    create_at = models.DateTimeField(auto_now_add=True)
+    update_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Block on {self.blocked_user_id} by {self.user_id}"
