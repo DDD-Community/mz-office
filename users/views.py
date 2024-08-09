@@ -320,16 +320,19 @@ class BlockListView(APIView):
         responses={
             200: openapi.Response(
                 description="차단한 사용자 목록",
-                examples={"application/json": {"blocked_users": ["user1", "user2", "user3"]}}
+                examples={"application/json": [
+                    {"id": 1, "question": 123, "user_id": "current_user", "blocked_user_id": "blocked_user1", "block_yn": "Y", "create_at": "2023-01-01T00:00:00Z", "update_at": "2023-01-01T00:00:00Z"},
+                    {"id": 2, "question": 124, "user_id": "current_user", "blocked_user_id": "blocked_user2", "block_yn": "Y", "create_at": "2023-01-01T00:00:00Z", "update_at": "2023-01-01T00:00:00Z"}
+                ]}
             )
         }
     )
     def get(self, request):
         user_id = request.user.social_id
-        blocked_users = Block.objects.filter(user_id=user_id)
-        blocked_user_ids = blocked_users.values_list('blocked_user_id', flat=True)
+        blocked_users = Block.objects.filter(user_id=user_id, block_yn='Y')
+        serializer = BlockSerializer(blocked_users, many=True)
 
-        return custom_response(data={"blocked_users": blocked_user_ids}, status=status.HTTP_200_OK)
+        return custom_response(data=serializer.data, status=status.HTTP_200_OK)
     
 class BlockUserView(APIView):
     """
@@ -385,7 +388,8 @@ class UnblockUserView(APIView):
 
         try:
             block_instance = Block.objects.get(user_id=user_id, blocked_user_id=blocked_user_id)
-            block_instance.delete()
+            block_instance.block_yn = 'N'
+            block_instance.save(update_fields=['block_yn', 'update_at'])
             return custom_response(data={"status": True, "message": "유저 차단이 해제되었습니다."}, status=status.HTTP_200_OK)
         except Block.DoesNotExist:
             return custom_response(data={"status": False, "message": "차단 기록이 존재하지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)

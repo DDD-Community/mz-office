@@ -6,7 +6,7 @@ from django.conf import settings
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import UserModel, UserRoleModel
+from .models import UserModel, UserRoleModel, Block
 
 
 class CreateUserSerializer(serializers.Serializer):
@@ -119,3 +119,9 @@ class UserInfoPhoneSerializer(serializers.ModelSerializer):
 
 class WithdrawalReasonSerializer(serializers.Serializer):
     reason = serializers.CharField(required=True, allow_blank=False, help_text='탈퇴 사유')
+
+class BlockSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Block
+        fields = '__all__'
+
