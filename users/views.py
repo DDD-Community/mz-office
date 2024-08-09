@@ -168,7 +168,7 @@ class MerberView(APIView):
 
         return custom_response(data=response_data, status=status.HTTP_200_OK)
 
-    @swagger_auto_schema(request_body=WithdrawalReasonSerializer, responses={204: ''})
+    @swagger_auto_schema(request_body=WithdrawalReasonSerializer, responses={200: ''})
     def delete(self, request, *args, **kwargs):
         '''
         계정 탈퇴
@@ -190,7 +190,7 @@ class MerberView(APIView):
         # 사용자 계정 삭제
         request.user.delete()
 
-        return custom_response(data={"status": True, "message": "회원 탈퇴가 완료되었습니다."}, status=status.HTTP_204_NO_CONTENT)
+        return custom_response(data={"status": True, "message": "회원 탈퇴가 완료되었습니다."}, status=status.HTTP_200_OK)
 
 
 # Serializer for verifying token request
