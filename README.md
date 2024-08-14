@@ -47,11 +47,12 @@ make down # 떠 있는 컨테이너를 모두 내립니다.
 
 ## release-server 용 Local 서버 기동
 
+```
 local.zip 압축 해제
 * key 2개, sh 1개, json 1개
 
 1. 현재 디렉터리에 git clone
- - git clone git clone https://github.com/DDD-Community/mz-office.git .
+ - git clone https://github.com/DDD-Community/mz-office.git .
 
 2. clone한 폴더와 동일 선상에서 가상환경 설치
  - python -m venv env
@@ -61,3 +62,6 @@ local.zip 압축 해제
 
 4. local.zip env 와 같은 경로에 압축 해제 
 5. local 기동
+
+deply.sh -> release-server 소스 기준 최신 커밋으로 서버 배포 후 재기동
+```
