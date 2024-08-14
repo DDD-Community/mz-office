@@ -43,3 +43,21 @@ make build # 도커 이미지 업데이트가 필요한 경우 사용합니다.
 make shell # 서버를 띄우지 않고 같은 환경으로 쉘을 띄우고 싶을 때 사용합니다.
 make down # 떠 있는 컨테이너를 모두 내립니다.
 ```
+
+
+## release-server 용 Local 서버 기동
+
+local.zip 압축 해제
+* key 2개, sh 1개, json 1개
+
+1. 현재 디렉터리에 git clone
+ - git clone git clone https://github.com/DDD-Community/mz-office.git .
+
+2. clone한 폴더와 동일 선상에서 가상환경 설치
+ - python -m venv env
+
+3. pip upgrade 및 requirements.txt 설치 (zapp 등 몇몇개는 제거)
+ - pip install -r requirements.txt
+
+4. local.zip env 와 같은 경로에 압축 해제 
+5. local 기동
