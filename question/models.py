@@ -4,7 +4,7 @@ from django.db import models
 class Question(models.Model):
     """질문"""
     user_id = models.CharField(max_length=100, verbose_name='소셜사용자_id')
-    emoji = models.IntegerField()
+    emoji = models.CharField(max_length=20)
     title = models.CharField(max_length=255)
     # question_a = models.CharField(max_length=1, null=True)
     # question_b = models.CharField(max_length=1, null=True)
