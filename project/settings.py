@@ -235,6 +235,7 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'logs', f'logs-{datetime.now().strftime("%Y-%m-%d")}.log'),
             'formatter': 'simple',
+            'encoding': 'utf-8',
         },
     },
     'loggers': {
