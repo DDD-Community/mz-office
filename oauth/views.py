@@ -291,48 +291,60 @@ class AppleCallbackView(APIView):
         logger.debug("4. AppleCallbackView GET 호출 - request query params: %s", request.query_params)
         data = request.query_params
 
+        access_token = data.get('access_token')
         code = data.get('code')
-        logger.debug("5. AppleCallbackView GET - code: %s", code)
+        logger.debug("5. AppleCallbackView GET - code: %s, access_token: %s", code, access_token)
 
-        if not code:
-            logger.debug("6. AppleCallbackView GET - code 없음")
+        # code와 access_token이 모두 없으면 에러 반환
+        if not code and not access_token:
+            logger.debug("6. AppleCallbackView GET - code와 access_token 없음")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        # CLIENT_SECRET 생성
-        client_secret = self.get_key_and_secret()
+        if code:
+            # code가 있을 때: Apple 서버에서 access_token 발급 요청
+            logger.debug("7. AppleCallbackView GET - code 사용하여 access_token 발급 요청")
 
-        # access_token 발급 요청
-        request_data = {
-            'grant_type': 'authorization_code',
-            'client_id': APPLE.CLIENT_ID,
-            'client_secret': client_secret,
-            'code': code,
-            'redirect_uri': APPLE.REDIRECT_URI,
-        }
-        token_headers = {
-            'Content-type': 'application/x-www-form-urlencoded;charset=utf-8'
-        }
+            client_secret = self.get_key_and_secret()
 
-        logger.debug("7. Apple access_token 요청 - request_data: %s", request_data)
-        token_res = requests.post(APPLE.TOKEN_URL, data=request_data, headers=token_headers)
-        logger.debug("8. Apple access_token 응답 - status_code: %s, response: %s", token_res.status_code, token_res.text)
+            request_data = {
+                'grant_type': 'authorization_code',
+                'client_id': APPLE.CLIENT_ID,
+                'client_secret': client_secret,
+                'code': code,
+                'redirect_uri': APPLE.REDIRECT_URI,
+            }
+            token_headers = {
+                'Content-type': 'application/x-www-form-urlencoded;charset=utf-8'
+            }
 
-        token_json = token_res.json()
-        id_token = token_json.get('id_token')
-        expires_in = token_json.get('expires_in', 0)
-        refresh_token_expires_in = token_json.get('refresh_token_expires_in', 0)
+            logger.debug("8. Apple access_token 요청 - request_data: %s", request_data)
+            token_res = requests.post(APPLE.TOKEN_URL, data=request_data, headers=token_headers)
+            logger.debug("9. Apple access_token 응답 - status_code: %s, response: %s", token_res.status_code, token_res.text)
 
-        if not id_token:
-            logger.debug("9. Apple access_token 응답 실패 - id_token 없음")
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            token_json = token_res.json()
+            access_token = token_json.get('access_token')
+            id_token = token_json.get('id_token')
+            expires_in = token_json.get('expires_in', 0)
+            refresh_token_expires_in = token_json.get('refresh_token_expires_in', 0)
+
+            if not id_token:
+                logger.debug("10. Apple access_token 응답 실패 - id_token 없음")
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        else:
+            # access_token이 있을 때: 클라이언트에서 전달된 access_token 사용
+            logger.debug("7. AppleCallbackView GET - 클라이언트에서 전달된 access_token 사용")
+            id_token = access_token  # access_token이 곧 id_token 역할을 함
+            expires_in = 0  # 만료 시간 정보가 없을 수 있으므로 0으로 설정
+            refresh_token_expires_in = 0
 
         # id_token 디코딩 및 사용자 정보 추출
-        logger.debug("10. Apple id_token 디코딩 시작")
+        logger.debug("11. Apple id_token 디코딩 시작")
         token_decode = jwt.decode(id_token, '', options={"verify_signature": False})
-        logger.debug("11. Apple id_token 디코딩 완료 - token_decode: %s", token_decode)
+        logger.debug("12. Apple id_token 디코딩 완료 - token_decode: %s", token_decode)
 
         if (not token_decode.get('sub')) or (not token_decode.get('email')) or (not token_decode.get('email_verified')):
-            logger.debug("12. Apple id_token 유효하지 않음 - sub: %s, email: %s, email_verified: %s",
+            logger.debug("13. Apple id_token 유효하지 않음 - sub: %s, email: %s, email_verified: %s",
                          token_decode.get('sub'), token_decode.get('email'), token_decode.get('email_verified'))
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -341,9 +353,9 @@ class AppleCallbackView(APIView):
         user_email = token_decode['email']
 
         # 회원가입 및 로그인
-        logger.debug("13. login_api 호출 전 - social_type: %s, social_id: %s, email: %s", social_type, social_id, user_email)
+        logger.debug("14. login_api 호출 전 - social_type: %s, social_id: %s, email: %s", social_type, social_id, user_email)
         res = login_api(social_type=social_type, social_id=social_id, email=user_email)
-        logger.debug("14. login_api 응답 - status_code: %s", res.status_code)
+        logger.debug("15. login_api 응답 - status_code: %s", res.status_code)
 
         # 토큰 정보 추가
         if isinstance(res, Response):
@@ -360,6 +372,7 @@ class AppleCallbackView(APIView):
             res.data['data']['is_refresh_token_expires'] = is_refresh_token_expires
 
         return res
+
 
 class AppleEndpoint(APIView):
     permission_classes = [AllowAny]
