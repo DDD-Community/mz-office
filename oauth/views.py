@@ -234,18 +234,20 @@ class GoogleCallbackView(APIView):
 class AppleLoginView(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, reqeust):
+    def get(self, request):
         '''
         apple code 요청
 
         ---
         '''
-        # APPLE_CLIENT_ID는 모바일 로그인시 Bundle ID, 웹 로그인시 Service ID를 사용한다.
+        logger.debug("1. AppleLoginView GET 호출됨")
+
         client_id = APPLE.CLIENT_ID
         redirect_uri = APPLE.REDIRECT_URI
 
         uri = f"{APPLE.AUTH_URL}?client_id={client_id}&&redirect_uri={redirect_uri}&response_type=code"
 
+        logger.debug("2. AppleLoginView 리다이렉트 URI - uri: %s", uri)
         res = redirect(uri)
         return res
 
@@ -257,6 +259,8 @@ class AppleCallbackView(APIView):
         '''
         CLIENT_SECRET 생성
         '''
+        logger.debug("3. AppleCallbackView CLIENT_SECRET 생성 시작")
+
         headers = {
             'alg': 'ES256',
             'kid': APPLE.KEY_ID,
@@ -277,6 +281,7 @@ class AppleCallbackView(APIView):
             headers=headers
         )
 
+        logger.debug("4. CLIENT_SECRET 생성 완료")
         return client_secret
 
     @swagger_auto_schema(query_serializer=CallbackAppleInfoSerializer)
@@ -286,9 +291,15 @@ class AppleCallbackView(APIView):
 
         ---
         '''
+        logger.debug("5. AppleCallbackView GET 호출됨 - request query params: %s", request.query_params)
+
         data = request.query_params
         code = data.get('code')
-        # id_token 서명 복호화시 에러로 검증할 수 없어 자체 발급한 id_token만 사용
+        logger.debug("6. AppleCallbackView GET - code: %s", code)
+
+        if not code:
+            logger.debug("7. AppleCallbackView GET - code 없음")
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
         # CLIENT_SECRET 생성
         client_secret = self.get_key_and_secret()
@@ -301,19 +312,26 @@ class AppleCallbackView(APIView):
             'grant_type': 'authorization_code',
             'redirect_uri': APPLE.REDIRECT_URI,
         }
-        # client_secret 유효성 검사
+
+        logger.debug("8. Apple access_token 요청 - request_data: %s", request_data)
         res = requests.post(APPLE.TOKEN_URL, data=request_data, headers=headers)
+        logger.debug("9. Apple access_token 응답 - status_code: %s, response: %s", res.status_code, res.text)
+
         response_json = res.json()
         id_token = response_json.get('id_token')
+
         if not id_token:
+            logger.debug("10. Apple access_token 응답 실패 - id_token 없음")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         # 백엔드 자체적으로 id_token 발급받은 경우 서명을 검증할 필요 없음
+        logger.debug("11. Apple id_token 디코딩 시작")
         token_decode = jwt.decode(id_token, '', options={"verify_signature": False})
-        # sub : (subject) is the unique user id
-        # email : is the email address of the user
+        logger.debug("12. Apple id_token 디코딩 완료 - token_decode: %s", token_decode)
 
         if (not token_decode.get('sub')) or (not token_decode.get('email')) or (not token_decode.get('email_verified')):
+            logger.debug("13. Apple id_token 유효하지 않음 - sub: %s, email: %s, email_verified: %s",
+                         token_decode.get('sub'), token_decode.get('email'), token_decode.get('email_verified'))
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         # Apple에서 받은 id_token에서 sub, email 조회
@@ -321,10 +339,11 @@ class AppleCallbackView(APIView):
         social_id = f"{social_type}_{token_decode['sub']}"
         user_email = token_decode['email']
 
-        # 회원가입 및 로그인
+        logger.debug("14. login_api 호출 전 - social_type: %s, social_id: %s, email: %s", social_type, social_id, user_email)
         res = login_api(social_type=social_type, social_id=social_id, email=user_email)
-        return res
+        logger.debug("15. login_api 응답 - status_code: %s", res.status_code)
 
+        return res
 
 class AppleEndpoint(APIView):
     permission_classes = [AllowAny]
