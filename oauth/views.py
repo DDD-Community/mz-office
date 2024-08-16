@@ -161,6 +161,10 @@ class KakaoCallbackView(APIView):
             res.data['data']['is_expires'] = is_expires
             res.data['data']['is_refresh_token_expires'] = is_refresh_token_expires
 
+        logger.debug("======================================")
+        logger.debug("Final. return res: %s", res)
+        logger.debug("======================================")
+
         return res
 
 
@@ -370,6 +374,10 @@ class AppleCallbackView(APIView):
             res.data['data']['refresh_token_expires_in'] = refresh_token_expires_in
             res.data['data']['is_expires'] = is_expires
             res.data['data']['is_refresh_token_expires'] = is_refresh_token_expires
+
+        logger.debug("======================================")
+        logger.debug("Final. return res: %s", res)
+        logger.debug("======================================")
 
         return res
 
