@@ -16,6 +16,7 @@ from rest_framework.mixins import (
 )
 
 from users.permission import IsAdminOrReadOnly
+from users.models import UserModel
 from .serializers import (
     QuestionSerializer,
     QuestionCreateSerializer,
@@ -47,6 +48,7 @@ class CustomPageNumberPagination(PageNumberPagination):
             }
         )
 
+
 class QuestionsListAPIView(ListModelMixin, GenericAPIView):
     """피드 목록"""
     permission_classes = [AllowAny]
@@ -60,6 +62,28 @@ class QuestionsListAPIView(ListModelMixin, GenericAPIView):
         context = super().get_serializer_context()
         context.update({"request": self.request})
         return context
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        job_type = self.request.query_params.get('job')
+        if job_type:
+            queryset = queryset.filter(
+                user_id__in=UserModel.objects.filter(job=job_type).values_list('social_id', flat=True))
+
+        generation = self.request.query_params.get('generation')
+        if generation:
+            queryset = queryset.filter(
+                user_id__in=UserModel.objects.filter(generation=generation).values_list('social_id', flat=True))
+
+        sort_by = self.request.query_params.get('sort_by')
+        if sort_by:
+            if sort_by == 'oldest':
+                queryset = queryset.order_by("created_at")
+        else:
+            queryset = queryset.order_by('-create_at')
+
+        return queryset
 
     def get(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
