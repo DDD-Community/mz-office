@@ -67,16 +67,19 @@ class QuestionsListAPIView(ListModelMixin, GenericAPIView):
         queryset = super().get_queryset()
 
         job_type = self.request.query_params.get('job')
+
         if job_type:
             queryset = queryset.filter(
                 user_id__in=UserModel.objects.filter(job=job_type).values_list('social_id', flat=True))
 
         generation = self.request.query_params.get('generation')
+
         if generation:
             queryset = queryset.filter(
                 user_id__in=UserModel.objects.filter(generation=generation).values_list('social_id', flat=True))
 
         sort_by = self.request.query_params.get('sort_by')
+
         if sort_by:
             if sort_by == 'oldest':
                 queryset = queryset.order_by("created_at")
@@ -88,6 +91,7 @@ class QuestionsListAPIView(ListModelMixin, GenericAPIView):
     def get(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
+
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
@@ -96,6 +100,39 @@ class QuestionsListAPIView(ListModelMixin, GenericAPIView):
         return custom_response(
             data=serializer.data
         )
+
+
+class MyQuestionsListAPIView(ListModelMixin, GenericAPIView):
+    """피드 목록"""
+    queryset = Question.objects.all().order_by('-id')
+    serializer_class = QuestionSerializer
+    pagination_class = CustomPageNumberPagination  # 페이징 설정 추가
+    page_size = 10
+    max_page_size = 50
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        return queryset.filter(
+            user_id=self.request.user.social_id)
+
+    def get(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return custom_response(
+            data=serializer.data
+        )
+
 
 class QuestionAPIView(CreateModelMixin, GenericAPIView):
     """질문 등록"""
@@ -234,4 +271,52 @@ class Block(ListModelMixin, CreateModelMixin, GenericAPIView):
         response = self.create(request, *args, **kwargs)
         return custom_response(
             data=response.data
+        )
+
+
+class AdminQuestionListAPIView(ListModelMixin, GenericAPIView):
+    permission_classes = [AllowAny]
+    queryset = Question.objects.all().order_by('-id')
+    serializer_class = QuestionSerializer
+    pagination_class = CustomPageNumberPagination  # 페이징 설정 추가
+    page_size = 10
+    max_page_size = 50
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        job_type = self.request.query_params.get('job')
+        if job_type:
+            queryset = queryset.filter(
+                user_id__in=UserModel.objects.filter(job=job_type).values_list('social_id', flat=True))
+
+        generation = self.request.query_params.get('generation')
+        if generation:
+            queryset = queryset.filter(
+                user_id__in=UserModel.objects.filter(generation=generation).values_list('social_id', flat=True))
+
+        sort_by = self.request.query_params.get('sort_by')
+        if sort_by:
+            if sort_by == 'oldest':
+                queryset = queryset.order_by("created_at")
+        else:
+            queryset = queryset.order_by('-create_at')
+
+        return queryset
+
+    def get(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return custom_response(
+            data=serializer.data
         )
