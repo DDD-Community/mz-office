@@ -18,6 +18,9 @@ class QuestionSerializer(serializers.ModelSerializer):
     metadata = serializers.SerializerMethodField()
 
     def get_user_info(self, obj):
+        if self.context['request'].user.is_anonymous:
+            return None
+
         user_id = obj.user_id
         try:
             user = UserModel.objects.get(social_id=user_id)
@@ -49,6 +52,13 @@ class QuestionSerializer(serializers.ModelSerializer):
     
     def get_metadata(self, obj):
         """조회하는 유저의 투표 여부 / 좋아요 여부 등"""
+        if self.context['request'].user.is_anonymous:
+            return {
+                "liked": False,
+                "voted": False,
+                "voted_to": None
+            }
+
         liked = Like.objects.filter(question=obj, user_id=self.context['request'].user.social_id).exists()
         voted_to = Answer.objects.filter(question=obj, user_id=self.context['request'].user.social_id)
         if not voted_to.exists():
