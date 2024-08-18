@@ -18,9 +18,6 @@ class QuestionSerializer(serializers.ModelSerializer):
     metadata = serializers.SerializerMethodField()
 
     def get_user_info(self, obj):
-        if self.context['request'].user.is_anonymous:
-            return None
-
         user_id = obj.user_id
         try:
             user = UserModel.objects.get(social_id=user_id)
