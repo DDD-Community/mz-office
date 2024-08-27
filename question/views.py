@@ -139,17 +139,29 @@ class QuestionAPIView(CreateModelMixin, GenericAPIView):
     queryset = Question.objects.all()
     serializer_class = QuestionCreateSerializer
 
+    BAD_WORDS = ['비속어1', '비속어2', '비속어3']
+
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context.update({"request": self.request})
         return context
 
+    def contains_bad_words(self, text):
+        for bad_word in self.BAD_WORDS:
+            if bad_word in text:
+                return True
+        return False
+
     def post(self, request, *args, **kwargs):
+        question_text = request.data.get('title', '')
+
+        if self.contains_bad_words(question_text):
+            return custom_response(data={"status": True, "message": "질문에 비속어가 포함되어 있습니다."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         response = self.create(request, *args, **kwargs)
         return custom_response(
             data=response.data
         )
-
 
 class QuestionsAPIView(UpdateModelMixin, DestroyModelMixin, GenericAPIView):
     """질문 수정 / 삭제"""
