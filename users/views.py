@@ -283,6 +283,63 @@ class JobListAPIView(GenericAPIView):
         serializer.is_valid()
         return custom_response(data=serializer.data)
 
+class GenerationSerializer(serializers.Serializer):
+    data = serializers.CharField()
+
+class GenerationListAPIView(GenericAPIView):
+    """Generation 목록"""
+    permission_classes = [AllowAny]
+    serializer_class = GenerationSerializer
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'year',
+                openapi.IN_QUERY,
+                description="출생 연도",
+                type=openapi.TYPE_INTEGER,
+                required=True
+            )
+        ],
+        responses={
+            200: openapi.Response(
+                description="세대 정보 반환",
+                examples={
+                    "application/json": {
+                        "data": "M 세대"
+                    }
+                }
+            )
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        year = request.query_params.get('year')
+
+        if year is None:
+            return custom_response(data={"error": "year 값이 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            year = int(year)
+        except ValueError:
+            return custom_response(data={"error": "유효한 year 값을 입력해 주세요."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 세대 계산 로직
+        if 1955 <= year <= 1964:
+            generation = "베이비붐 세대"
+        elif 1965 <= year <= 1980:
+            generation = "X 세대"
+        elif 1981 <= year <= 1996:
+            generation = "M 세대"
+        elif 1997 <= year <= 2010:
+            generation = "Z 세대"
+        elif 2011 <= year <= 2024:
+            generation = "알파 세대"
+        else:
+            generation = "기타 세대"
+
+        serializer = self.get_serializer(data={'data': generation})
+        serializer.is_valid(raise_exception=True)
+        return custom_response(data=serializer.data, status=status.HTTP_200_OK)
 
 class NicknameCheckAPIView(APIView):
     """Nickname 유효성 체크"""

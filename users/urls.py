@@ -9,6 +9,7 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('jobs/', JobListAPIView.as_view(), name='job_list'),
+    path('generation/', GenerationListAPIView.as_view(), name='generation_list'),
     path('nickname-check/', NicknameCheckAPIView.as_view(), name='nickname_check'),
     path('verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('block/', BlockUserView.as_view(), name='block_user'),
