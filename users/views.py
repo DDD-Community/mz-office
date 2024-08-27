@@ -9,6 +9,7 @@ from drf_yasg import openapi
 from rest_framework_simplejwt.tokens import UntypedToken
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from django.db.models import Q
 
 from .models import *
 from .serializers import *
@@ -321,18 +322,47 @@ class BlockListView(APIView):
             200: openapi.Response(
                 description="차단한 사용자 목록",
                 examples={"application/json": [
-                    {"id": 1, "question": 123, "user_id": "current_user", "blocked_user_id": "blocked_user1", "block_yn": "Y", "create_at": "2023-01-01T00:00:00Z", "update_at": "2023-01-01T00:00:00Z"},
-                    {"id": 2, "question": 124, "user_id": "current_user", "blocked_user_id": "blocked_user2", "block_yn": "Y", "create_at": "2023-01-01T00:00:00Z", "update_at": "2023-01-01T00:00:00Z"}
+                    {
+                        "block_id": 1,
+                        "blocked_user_id": "blocked_user1",
+                        "nickname": "닉네임",
+                        "job": "개발자",
+                        "generation": "M 세대"
+                    },
+                    {
+                        "block_id": 2,
+                        "blocked_user_id": "blocked_user2",
+                        "nickname": "다른 닉네임",
+                        "job": "디자이너",
+                        "generation": "Z 세대"
+                    }
                 ]}
             )
         }
     )
     def get(self, request):
         user_id = request.user.social_id
-        blocked_users = Block.objects.filter(user_id=user_id, block_yn='Y')
-        serializer = BlockSerializer(blocked_users, many=True)
 
-        return custom_response(data=serializer.data, status=status.HTTP_200_OK)
+        # Block에서 현재 사용자에 해당하는 차단 목록 필터링
+        blocked_users = Block.objects.filter(user_id=user_id, block_yn='Y')
+
+        # 결과 데이터를 생성
+        response_data = []
+        for block in blocked_users:
+            try:
+                blocked_user = UserModel.objects.get(social_id=block.blocked_user_id)
+                response_data.append({
+                    "block_id": block.id,
+                    "blocked_user_id": block.blocked_user_id,
+                    "nickname": blocked_user.nickname,
+                    "job": blocked_user.job,
+                    "generation": blocked_user.generation,
+                })
+            except UserModel.DoesNotExist:
+                # 해당 유저가 존재하지 않는 경우, 데이터를 제외하고 넘어갑니다.
+                continue
+
+        return custom_response(data=response_data, status=status.HTTP_200_OK)
     
 class BlockUserView(APIView):
     """
