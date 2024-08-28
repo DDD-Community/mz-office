@@ -1,5 +1,7 @@
 #!/bin/bash
 
+git pull
+
 # 커밋 메시지를 입력받음
 echo "Enter your commit message:"
 read commit_message
