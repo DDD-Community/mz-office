@@ -480,3 +480,14 @@ class UnblockUserView(APIView):
             return custom_response(data={"status": True, "message": "유저 차단이 해제되었습니다."}, status=status.HTTP_200_OK)
         except Block.DoesNotExist:
             return custom_response(data={"status": False, "message": "차단 기록이 존재하지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GenerationView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return custom_response(
+            data={
+                "data": ["Z", "M", "X", "베이비붐"]
+            }
+        )
