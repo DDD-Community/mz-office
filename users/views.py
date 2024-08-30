@@ -488,6 +488,6 @@ class GenerationView(APIView):
     def get(self, request):
         return custom_response(
             data={
-                "data": ["Z", "M", "X", "베이비붐"]
+                "data": ["Z", "M", "X", "베이비붐", "기타"]
             }
         )
