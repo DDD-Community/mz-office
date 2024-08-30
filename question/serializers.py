@@ -2,6 +2,8 @@
 from rest_framework import serializers
 from .models import Question, Report, Like, Answer, Block
 from users.models import UserModel
+from django.core.exceptions import ValidationError
+
 
 class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -118,8 +120,15 @@ class QuestionCreateSerializer(serializers.ModelSerializer):
 
 class AnswerSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
-        validated_data['user_id'] = self.context['request'].user.social_id
-        validated_data['question_id'] = self.context['view'].kwargs["pk"]
+        user_id = self.context['request'].user.social_id
+        question_id = self.context['view'].kwargs["pk"]
+        answer = Answer.objects.filter(user_id=user_id, question_id=question_id)
+
+        if answer.exists():
+            raise ValidationError("User already answered")
+
+        validated_data['user_id'] = user_id
+        validated_data['question_id'] = question_id
         validated_data['user_choice'] = validated_data['user_choice'].lower()
         return super().create(validated_data)
 
