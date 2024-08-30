@@ -15,6 +15,7 @@ from rest_framework.mixins import (
     DestroyModelMixin,
 )
 from django.db.models import Count
+from django.core.exceptions import ValidationError
 
 from users.permission import IsAdminOrReadOnly
 from users.models import UserModel
@@ -160,6 +161,7 @@ class QuestionStatsView(GenericAPIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+
 class MyQuestionsListAPIView(ListModelMixin, GenericAPIView):
     """피드 목록"""
     queryset = Question.objects.all().order_by('-id')
@@ -243,7 +245,13 @@ class AnswerAPIView(CreateModelMixin, GenericAPIView):
         return context
 
     def post(self, request, *args, **kwargs):
-        response = self.create(request, *args, **kwargs)
+        try:
+            response = self.create(request, *args, **kwargs)
+        except ValidationError as e:
+            return custom_response(
+                data=e,
+                status=status.HTTP_400_BAD_REQUEST
+            )
         return custom_response(
             data=response.data
         )
