@@ -127,17 +127,17 @@ class QuestionStatsView(GenericAPIView):
             users = UserModel.objects.filter(social_id__in=user_ids)
             user_generation = {user.social_id: user.generation for user in users}
 
-            answer_ratio = {'A': {}, 'B': {}}
+            answer_ratio = {'a': {}, 'b': {}}
             total_A = 0
             total_B = 0
 
             for answer in answers:
                 user_gen = user_generation.get(answer['user_id'], 'Unknown')
-                choice = answer['user_choice']
+                choice = answer['user_choice'].lower()
                 count = answer['count']
-                if choice == 'A':
+                if choice == 'a':
                     total_A += count
-                elif choice == 'B':
+                elif choice == 'b':
                     total_B += count
                 percentage = (count / total_votes) * 100
 
@@ -146,10 +146,10 @@ class QuestionStatsView(GenericAPIView):
                 else:
                     answer_ratio[choice][user_gen] += percentage
 
-                # 전체 A와 B 비율 계산
+            # 전체 A와 B 비율 계산
             total_ratio_A = (total_A / total_votes) * 100
             total_ratio_B = (total_B / total_votes) * 100
-            overall_ratio = {'A': total_ratio_A, 'B': total_ratio_B}
+            overall_ratio = {'a': total_ratio_A, 'b': total_ratio_B}
 
             return custom_response(
                 data={'id': question_id, 'stats': answer_ratio, 'overall_ratio': overall_ratio}
@@ -159,7 +159,6 @@ class QuestionStatsView(GenericAPIView):
                 data={'error': 'Question not found.'},
                 status=status.HTTP_404_NOT_FOUND
             )
-
 
 class MyQuestionsListAPIView(ListModelMixin, GenericAPIView):
     """피드 목록"""
