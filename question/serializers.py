@@ -120,6 +120,7 @@ class AnswerSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['user_id'] = self.context['request'].user.social_id
         validated_data['question_id'] = self.context['view'].kwargs["pk"]
+        validated_data['user_choice'] = validated_data['user_choice'].lower()
         return super().create(validated_data)
 
     class Meta:
