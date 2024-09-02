@@ -31,9 +31,9 @@ nickname_check_response = openapi.Response(
     description="Nickname check response",
     schema=nickname_check_response_schema,
     examples={
-        "application/json": {"exists": False, "message": "사용 불가능한 닉네임 입니다."},
-        "application/json": {"exists": True, "message": "사용 가능한 닉네임 입니다."},
-        "application/json": {"exists": False, "message": "닉네임에 공백이 들어갈 수 없습니다."}
+        "application/json": {"exists": False, "message": "사용 불가능한 닉네임이에요."},
+        "application/json": {"exists": True, "message": "사용 가능한 닉네임이에요."},
+        "application/json": {"exists": False, "message": "닉네임에 공백이 들어갈 수 없어요."}
     }
 )
 
@@ -359,12 +359,12 @@ class NicknameCheckAPIView(APIView):
             return custom_response(data={"error": "닉네임을 입력해주세요."}, status=status.HTTP_400_BAD_REQUEST)
 
         if ' ' in nickname or nickname.strip() != nickname:
-            return custom_response(data={"exists": False, "message": "닉네임에 공백이 들어갈 수 없습니다."}, status=status.HTTP_200_OK)
+            return custom_response(data={"exists": False, "message": "닉네임에 공백이 들어갈 수 없어요."}, status=status.HTTP_200_OK)
 
         if UserModel.objects.filter(nickname=nickname).exists():
-            return custom_response(data={"exists": False, "message": "사용 불가능한 닉네임 입니다."}, status=status.HTTP_200_OK)
+            return custom_response(data={"exists": False, "message": "사용 불가능한 닉네임이에요."}, status=status.HTTP_200_OK)
         else:
-            return custom_response(data={"exists": True, "message": "사용 가능한 닉네임 입니다."}, status=status.HTTP_200_OK)
+            return custom_response(data={"exists": True, "message": "사용 가능한 닉네임이에요."}, status=status.HTTP_200_OK)
         
         
 class BlockListView(APIView):
