@@ -126,14 +126,16 @@ class QuestionStatsView(GenericAPIView):
             )
             user_ids = {answer['user_id'] for answer in answers}
             users = UserModel.objects.filter(social_id__in=user_ids)
-            user_generation = {user.social_id: user.generation for user in users}
+            user_generation = {user.social_id: user.generation if user.generation else '기타세대' for user in users}
 
-            answer_ratio = {'a': {}, 'b': {}}
+            # 세대 목록 초기화
+            generations = ['Z세대', 'M세대', 'X세대', '베이비붐세대', '기타세대']
+            answer_ratio = {'a': {gen: 0 for gen in generations}, 'b': {gen: 0 for gen in generations}}
             total_A = 0
             total_B = 0
 
             for answer in answers:
-                user_gen = user_generation.get(answer['user_id'], 'Unknown')
+                user_gen = user_generation.get(answer['user_id'], '기타세대')
                 choice = answer['user_choice'].lower()
                 count = answer['count']
                 if choice == 'a':
@@ -142,9 +144,7 @@ class QuestionStatsView(GenericAPIView):
                     total_B += count
                 percentage = (count / total_votes) * 100
 
-                if user_gen not in answer_ratio[choice]:
-                    answer_ratio[choice][user_gen] = percentage
-                else:
+                if user_gen in answer_ratio[choice]:
                     answer_ratio[choice][user_gen] += percentage
 
             # 전체 A와 B 비율 계산
