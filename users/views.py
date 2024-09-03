@@ -488,6 +488,16 @@ class GenerationView(APIView):
     def get(self, request):
         return custom_response(
             data={
-                "data": ["Z", "M", "X", "베이비붐", "기타"]
+                "data": ["Z 세대", "M 세대", "X 세대", "베이비붐 세대", "기타 세대"]
+            }
+        )
+
+class GenerationViewNew(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return custom_response(
+            data={
+                "data": ["Z세대", "M세대", "X세대", "베이비붐세대", "기타세대"]
             }
         )
