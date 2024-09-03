@@ -11,6 +11,7 @@ urlpatterns = [
     path('jobs/', JobListAPIView.as_view(), name='job_list'),
     path('generation/', GenerationListAPIView.as_view(), name='generation_list'),
     path('generations/', GenerationView.as_view(), name=''),
+    path('generations-new/', GenerationViewNew.as_view(), name=''),
     path('nickname-check/', NicknameCheckAPIView.as_view(), name='nickname_check'),
     path('verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('block/', BlockUserView.as_view(), name='block_user'),
