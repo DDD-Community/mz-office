@@ -348,8 +348,6 @@ class AppleCallbackView(APIView):
         
 
         if (not token_decode.get('sub')) or (not token_decode.get('email')) or (not token_decode.get('email_verified')):
-            
-                         token_decode.get('sub'), token_decode.get('email'), token_decode.get('email_verified'))
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         social_type = 'apple'
