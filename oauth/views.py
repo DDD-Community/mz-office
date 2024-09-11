@@ -400,12 +400,61 @@ class AppleEndpoint(APIView):
 
     def post(self, request):
         '''
-        apple 사용자 정보수정
-
+        Apple 사용자 정보수정 및 계정 탈퇴 처리
         ---
         이메일 변경, 서비스 해지, 계정 탈퇴에 대한 정보를 받는용
         '''
         data = request.data
+        social_id = data.get('sub')  # Apple에서 제공하는 사용자 ID (sub)
+        user_email = data.get('email')  # Apple에서 제공하는 사용자 이메일
 
-        response = Response(status=status.HTTP_200_OK)
-        return response
+        if not social_id or not user_email:
+            return Response({"detail": "Invalid request"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Apple API 호출하여 계정 삭제 요청
+        if self.revoke_apple_token(social_id):
+            logger.info(f"Apple 계정 삭제 성공: social_id={social_id}")
+
+            # 사용자 삭제 처리 로직
+            try:
+                user = UserModel.objects.get(social_id=social_id)
+                user.delete()
+
+                logger.info(f"Apple 사용자 {social_id} 탈퇴 완료")
+                return Response({"detail": "Account deleted"}, status=status.HTTP_200_OK)
+
+            except UserModel.DoesNotExist:
+                logger.error(f"사용자를 찾을 수 없습니다: social_id={social_id}")
+                return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            logger.error(f"Apple 계정 삭제 실패: social_id={social_id}")
+            return Response({"detail": "Apple account deletion failed"}, status=status.HTTP_400_BAD_REQUEST)
+
+    def revoke_apple_token(self, social_id):
+        '''
+        Apple API에 요청을 보내서 사용자 계정 및 토큰을 무효화
+        '''
+        url = 'https://appleid.apple.com/auth/revoke'
+        client_id = 'YOUR_CLIENT_ID'
+        client_secret = 'YOUR_CLIENT_SECRET'
+        
+        # 요청 데이터 설정
+        data = {
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'token': social_id,
+            'token_type_hint': 'refresh_token',
+        }
+        
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+        
+        response = requests.post(url, data=data, headers=headers)
+        
+        if response.status_code == 200:
+            logger.info(f"Apple 계정 토큰 무효화 성공: social_id={social_id}")
+            return True
+        else:
+            logger.error(f"Apple 계정 토큰 무효화 실패: status_code={response.status_code}")
+            return False
