@@ -260,8 +260,7 @@ class AppleCallbackView(APIView):
         '''
         CLIENT_SECRET 생성
         '''
-        
-
+        logger.info("Apple Client Secret 생성 시작")
         headers = {
             'alg': 'ES256',
             'kid': APPLE.KEY_ID,
@@ -281,33 +280,30 @@ class AppleCallbackView(APIView):
             algorithm='ES256',
             headers=headers
         )
-
         
+        logger.info("Apple Client Secret 생성 완료")
         return client_secret
 
     @swagger_auto_schema(query_serializer=CallbackAppleInfoSerializer)
     def get(self, request):
         '''
-        apple id_token 및 user_info 조회
+        Apple id_token 및 user_info 조회
 
         ---
         '''
-        
+        logger.info("Apple 로그인 콜백 요청 시작")
         data = request.query_params
-
         access_token = data.get('access_token')
         code = data.get('code')
-        
 
         # code와 access_token이 모두 없으면 에러 반환
         if not code and not access_token:
-            
+            logger.error("code와 access_token이 없음")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         if code:
             # code가 있을 때: Apple 서버에서 access_token 발급 요청
-            
-
+            logger.info(f"Authorization code 확인: {code}")
             client_secret = self.get_key_and_secret()
 
             request_data = {
@@ -321,43 +317,43 @@ class AppleCallbackView(APIView):
                 'Content-type': 'application/x-www-form-urlencoded;charset=utf-8'
             }
 
-            
+            logger.info("Apple 서버에 토큰 요청 시작")
             token_res = requests.post(APPLE.TOKEN_URL, data=request_data, headers=token_headers)
-            
-
             token_json = token_res.json()
+
+            logger.info(f"Apple 서버 응답 수신: {token_json}")
             access_token = token_json.get('access_token')
             id_token = token_json.get('id_token')
             expires_in = token_json.get('expires_in', 0)
             refresh_token_expires_in = token_json.get('refresh_token_expires_in', 0)
 
             if not id_token:
-                
+                logger.error("Apple에서 id_token 발급 실패")
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
         else:
             # access_token이 있을 때: 클라이언트에서 전달된 access_token 사용
-            
+            logger.info(f"클라이언트에서 전달된 access_token 확인: {access_token}")
             id_token = access_token  # access_token이 곧 id_token 역할을 함
             expires_in = 0  # 만료 시간 정보가 없을 수 있으므로 0으로 설정
             refresh_token_expires_in = 0
 
         # id_token 디코딩 및 사용자 정보 추출
-        
+        logger.info("Apple id_token 디코딩 시작")
         token_decode = jwt.decode(id_token, '', options={"verify_signature": False})
-        
+        logger.info(f"디코딩된 id_token 정보: {token_decode}")
 
-        if (not token_decode.get('sub')) or (not token_decode.get('email')) or (not token_decode.get('email_verified')):
+        if not token_decode.get('sub') or not token_decode.get('email') or not token_decode.get('email_verified'):
+            logger.error("Apple 사용자 정보 부족: sub, email, email_verified 필수 항목 누락")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         social_type = 'apple'
         social_id = f"{social_type}_{token_decode['sub']}"
         user_email = token_decode['email']
 
-        # 회원가입 및 로그인
-        
+        # 회원가입 및 로그인 처리
+        logger.info(f"회원가입 또는 로그인 처리 시작: social_id={social_id}, email={user_email}")
         res = login_api(social_type=social_type, social_id=social_id, email=user_email)
-        
 
         # 토큰 정보 추가
         if isinstance(res, Response):
@@ -368,17 +364,15 @@ class AppleCallbackView(APIView):
             is_expires = current_time >= access_token_expiry_time
             is_refresh_token_expires = current_time >= refresh_token_expiry_time
 
+            logger.info(f"토큰 만료 정보 추가: access_token 만료 여부={is_expires}, refresh_token 만료 여부={is_refresh_token_expires}")
+
             res.data['data']['expires_in'] = expires_in
             res.data['data']['refresh_token_expires_in'] = refresh_token_expires_in
             res.data['data']['is_expires'] = is_expires
             res.data['data']['is_refresh_token_expires'] = is_refresh_token_expires
 
-        
-        
-        
-
+        logger.info("Apple 로그인 콜백 처리 완료")
         return res
-
 
 class AppleEndpoint(APIView):
     permission_classes = [AllowAny]
