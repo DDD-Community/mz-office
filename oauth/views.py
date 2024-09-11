@@ -349,24 +349,35 @@ class AppleCallbackView(APIView):
 
         # 회원가입 및 로그인 처리
         logger.info(f"회원가입 또는 로그인 처리 시작: social_id={social_id}, email={user_email}")
-        res = login_api(social_type=social_type, social_id=social_id, email=user_email)
+        user = self.get_or_create_user(social_id, user_email)
 
-        # 토큰 정보 추가
-        if isinstance(res, Response):
+        # Django JWT 토큰 생성 및 로그 출력
+        if user:
             current_time = datetime.utcnow()
+
+            # Django에서 JWT 토큰 생성
+            refresh = RefreshToken.for_user(user)
+
+            logger.info(f"JWT access_token 생성: {str(refresh.access_token)}")
+            logger.info(f"JWT refresh_token 생성: {str(refresh)}")
+
             access_token_expiry_time = current_time + timedelta(seconds=expires_in)
             refresh_token_expiry_time = current_time + timedelta(seconds=refresh_token_expires_in)
 
             is_expires = current_time >= access_token_expiry_time
             is_refresh_token_expires = current_time >= refresh_token_expiry_time
 
-            res.data['data']['expires_in'] = expires_in
-            res.data['data']['refresh_token_expires_in'] = refresh_token_expires_in
-            res.data['data']['is_expires'] = is_expires
-            res.data['data']['is_refresh_token_expires'] = is_refresh_token_expires
+            # JWT 토큰 정보를 기존 응답에 추가
+            res = login_api(social_type=social_type, social_id=social_id, email=user_email)
 
-        logger.info("Apple 로그인 콜백 처리 완료")
-        return res
+            if isinstance(res, Response):
+                res.data['data']['jwt_access_token'] = str(refresh.access_token)
+                res.data['data']['jwt_refresh_token'] = str(refresh)
+
+                logger.info("Apple 로그인 콜백 처리 완료")
+                return res
+
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     def get_or_create_user(self, social_id, email):
         '''
