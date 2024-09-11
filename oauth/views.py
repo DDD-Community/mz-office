@@ -321,6 +321,7 @@ class AppleCallbackView(APIView):
             access_token = token_json.get('access_token')
             id_token = token_json.get('id_token')
             expires_in = token_json.get('expires_in', 0)
+            refresh_token = token_json.get('refresh_token', '')
             refresh_token_expires_in = token_json.get('refresh_token_expires_in', 0)
 
             if not id_token:
@@ -332,6 +333,7 @@ class AppleCallbackView(APIView):
             logger.info(f"클라이언트에서 전달된 access_token 확인: {access_token}")
             id_token = access_token  # access_token이 곧 id_token 역할을 함
             expires_in = 0  # 만료 시간 정보가 없을 수 있으므로 0으로 설정
+            refresh_token = ''  # iOS에서는 refresh_token이 없을 수 있음
             refresh_token_expires_in = 0
 
         # id_token 디코딩 및 사용자 정보 추출
@@ -351,30 +353,16 @@ class AppleCallbackView(APIView):
         logger.info(f"회원가입 또는 로그인 처리 시작: social_id={social_id}, email={user_email}")
         user = self.get_or_create_user(social_id, user_email)
 
-        # Django JWT 토큰 생성 및 반환
+        # Apple에서 받은 access_token과 refresh_token을 응답으로 반환
         if user:
-            current_time = datetime.utcnow()
+            logger.info(f"Apple access_token: {access_token}, refresh_token: {refresh_token}")
 
-            # Django에서 JWT 토큰 생성
-            refresh = RefreshToken.for_user(user)
-
-            logger.info(f"JWT access_token 생성: {str(refresh.access_token)}")
-            logger.info(f"JWT refresh_token 생성: {str(refresh)}")
-
-            access_token_expiry_time = current_time + timedelta(seconds=expires_in)
-            refresh_token_expiry_time = current_time + timedelta(seconds=refresh_token_expires_in)
-
-            is_expires = current_time >= access_token_expiry_time
-            is_refresh_token_expires = current_time >= refresh_token_expiry_time
-
-            # JWT 토큰을 응답으로 반환
+            # Apple 토큰을 응답으로 반환
             return Response({
-                'access_token': access_token,
-                'refresh_token': str(refresh),              # Django JWT refresh_token
+                'access_token': access_token,               # Apple에서 받은 access_token
+                'refresh_token': refresh_token,             # Apple에서 받은 refresh_token
                 'expires_in': expires_in,
-                'refresh_token_expires_in': refresh_token_expires_in,
-                'is_expires': is_expires,
-                'is_refresh_token_expires': is_refresh_token_expires,
+                'refresh_token_expires_in': refresh_token_expires_in
             }, status=status.HTTP_200_OK)
 
         return Response(status=status.HTTP_400_BAD_REQUEST)
