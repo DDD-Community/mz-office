@@ -19,7 +19,7 @@ from oauth.utils import (
 from .serializers import *
 from users.models import UserModel
 from users.views import LoginView, UserView
-from django.core.exceptions import ImproperlyConfigured
+from rest_framework_simplejwt.tokens import RefreshToken
 import logging
 from datetime import datetime, timedelta
 
@@ -230,23 +230,6 @@ class GoogleCallbackView(APIView):
         res = login_api(social_type=social_type, social_id=social_id, email=user_email)
         return res
 
-class AppleLoginView(APIView):
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        '''
-        apple code 요청
-
-        ---
-        '''
-        client_id = APPLE.CLIENT_ID
-        redirect_uri = APPLE.REDIRECT_URI
-        uri = f"{APPLE.AUTH_URL}?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code"
-
-        
-        res = redirect(uri)
-        return res
-
 class AppleCallbackView(APIView):
     permission_classes = [AllowAny]
 
@@ -349,8 +332,20 @@ class AppleCallbackView(APIView):
         logger.info(f"회원가입 또는 로그인 처리 시작: social_id={social_id}, email={user_email}")
         res = login_api(social_type=social_type, social_id=social_id, email=user_email)
 
-        # 토큰 정보 추가
+        # JWT 토큰 생성 및 출력
         if isinstance(res, Response):
+            current_time = datetime.utcnow()
+
+            # Django에서 JWT 토큰 생성
+            refresh = RefreshToken.for_user(res.data['user'])  # user를 적절히 설정
+
+            logger.info(f"JWT access_token 생성: {str(refresh.access_token)}")
+            logger.info(f"JWT refresh_token 생성: {str(refresh)}")
+
+            # JWT 토큰을 출력
+            print(f"Access Token: {str(refresh.access_token)}")
+            print(f"Refresh Token: {str(refresh)}")
+
             current_time = datetime.utcnow()
             access_token_expiry_time = current_time + timedelta(seconds=expires_in)
             refresh_token_expiry_time = current_time + timedelta(seconds=refresh_token_expires_in)
