@@ -15,11 +15,12 @@ from oauth.utils import (
     GOOGLE,
     APPLE,
 )
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .serializers import *
 from users.models import UserModel
 from users.views import LoginView, UserView
-from rest_framework_simplejwt.tokens import RefreshToken
+from django.core.exceptions import ImproperlyConfigured
 import logging
 from datetime import datetime, timedelta
 
@@ -53,6 +54,7 @@ def login_api(social_type: str, social_id: str, email: str=None, phone: str=None
 
     
     return response
+
 
 class KakaoLoginView(APIView):
     permission_classes = [AllowAny]
@@ -228,6 +230,23 @@ class GoogleCallbackView(APIView):
 
         # 회원가입 및 로그인
         res = login_api(social_type=social_type, social_id=social_id, email=user_email)
+        return res
+
+class AppleLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        '''
+        apple code 요청
+
+        ---
+        '''
+        client_id = APPLE.CLIENT_ID
+        redirect_uri = APPLE.REDIRECT_URI
+        uri = f"{APPLE.AUTH_URL}?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code"
+
+        
+        res = redirect(uri)
         return res
 
 class AppleCallbackView(APIView):
