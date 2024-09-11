@@ -277,7 +277,7 @@ class AppleCallbackView(APIView):
             algorithm='ES256',
             headers=headers
         )
-        
+
         logger.info("Apple Client Secret 생성 완료")
         return client_secret
 
@@ -288,6 +288,7 @@ class AppleCallbackView(APIView):
         '''
         logger.info("Apple 로그인 콜백 요청 시작")
         data = request.query_params
+
         access_token = data.get('access_token')
         code = data.get('code')
 
@@ -348,40 +349,24 @@ class AppleCallbackView(APIView):
 
         # 회원가입 및 로그인 처리
         logger.info(f"회원가입 또는 로그인 처리 시작: social_id={social_id}, email={user_email}")
-        user = self.get_or_create_user(social_id, user_email)  # 사용자 인스턴스 가져오기
+        res = login_api(social_type=social_type, social_id=social_id, email=user_email)
 
-        # JWT 토큰 생성 및 출력
-        if user:
+        # 토큰 정보 추가
+        if isinstance(res, Response):
             current_time = datetime.utcnow()
-
-            # Django에서 JWT 토큰 생성
-            refresh = RefreshToken.for_user(user)  # 실제 User 인스턴스 사용
-
-            logger.info(f"JWT access_token 생성: {str(refresh.access_token)}")
-            logger.info(f"JWT refresh_token 생성: {str(refresh)}")
-
-            # JWT 토큰을 출력
-            print(f"Access Token: {str(refresh.access_token)}")
-            print(f"Refresh Token: {str(refresh)}")
-
             access_token_expiry_time = current_time + timedelta(seconds=expires_in)
             refresh_token_expiry_time = current_time + timedelta(seconds=refresh_token_expires_in)
 
             is_expires = current_time >= access_token_expiry_time
             is_refresh_token_expires = current_time >= refresh_token_expiry_time
 
-            logger.info(f"토큰 만료 정보 추가: access_token 만료 여부={is_expires}, refresh_token 만료 여부={is_refresh_token_expires}")
+            res.data['data']['expires_in'] = expires_in
+            res.data['data']['refresh_token_expires_in'] = refresh_token_expires_in
+            res.data['data']['is_expires'] = is_expires
+            res.data['data']['is_refresh_token_expires'] = is_refresh_token_expires
 
-            return Response({
-                'access_token': str(refresh.access_token),
-                'refresh_token': str(refresh),
-                'expires_in': expires_in,
-                'refresh_token_expires_in': refresh_token_expires_in,
-                'is_expires': is_expires,
-                'is_refresh_token_expires': is_refresh_token_expires,
-            }, status=status.HTTP_200_OK)
-
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        logger.info("Apple 로그인 콜백 처리 완료")
+        return res
 
     def get_or_create_user(self, social_id, email):
         '''
