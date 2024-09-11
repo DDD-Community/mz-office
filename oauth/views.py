@@ -19,9 +19,10 @@ from oauth.utils import (
 from .serializers import *
 from users.models import UserModel
 from users.views import LoginView, UserView
-from django.core.exceptions import ImproperlyConfigured
+from rest_framework_simplejwt.tokens import RefreshToken
 import logging
 from datetime import datetime, timedelta
+from django.utils import timezone
 
 logger = logging.getLogger('django.request')
 
@@ -278,95 +279,110 @@ class AppleCallbackView(APIView):
         logger.info("Apple Client Secret 생성 완료")
         return client_secret
 
-    @swagger_auto_schema(query_serializer=CallbackAppleInfoSerializer)
+    def verify_apple_token(self, id_token):
+        '''
+        Apple의 id_token을 검증하여 유효성을 확인하고, 사용자 정보를 추출합니다.
+        '''
+        logger.info("Apple JWT 토큰 검증 시작")
+        # Apple 공개 키를 가져옵니다.
+        response = requests.get("https://appleid.apple.com/auth/keys")
+        apple_keys = response.json()
+        
+        # id_token의 헤더에서 kid를 가져옵니다.
+        unverified_header = jwt.get_unverified_header(id_token)
+        rsa_key = {}
+        for key in apple_keys['keys']:
+            if key['kid'] == unverified_header['kid']:
+                rsa_key = {
+                    'kty': key['kty'],
+                    'kid': key['kid'],
+                    'use': key['use'],
+                    'n': key['n'],
+                    'e': key['e']
+                }
+
+        # 공개 키가 있으면 토큰 검증
+        if rsa_key:
+            try:
+                decoded_token = jwt.decode(id_token, rsa_key, algorithms=['RS256'], audience=APPLE.CLIENT_ID)
+                return decoded_token
+            except jwt.ExpiredSignatureError:
+                logger.error("Apple JWT 토큰이 만료되었습니다.")
+                return None
+            except jwt.JWTClaimsError:
+                logger.error("JWT Claims 오류: audience 불일치")
+                return None
+            except Exception as e:
+                logger.error(f"토큰 검증 오류: {str(e)}")
+                return None
+
+        logger.error("Apple JWT RSA 키를 찾을 수 없습니다.")
+        return None
+
     def get(self, request):
         '''
         Apple id_token 및 user_info 조회
-
-        ---
         '''
         logger.info("Apple 로그인 콜백 요청 시작")
         data = request.query_params
-        access_token = data.get('access_token')
-        code = data.get('code')
+        id_token = data.get('id_token')
 
-        # code와 access_token이 모두 없으면 에러 반환
-        if not code and not access_token:
-            logger.error("code와 access_token이 없음")
+        if not id_token:
+            logger.error("id_token이 없음")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        if code:
-            # code가 있을 때: Apple 서버에서 access_token 발급 요청
-            logger.info(f"Authorization code 확인: {code}")
-            client_secret = self.get_key_and_secret()
-
-            request_data = {
-                'grant_type': 'authorization_code',
-                'client_id': APPLE.CLIENT_ID,
-                'client_secret': client_secret,
-                'code': code,
-                'redirect_uri': APPLE.REDIRECT_URI,
-            }
-            token_headers = {
-                'Content-type': 'application/x-www-form-urlencoded;charset=utf-8'
-            }
-
-            logger.info("Apple 서버에 토큰 요청 시작")
-            token_res = requests.post(APPLE.TOKEN_URL, data=request_data, headers=token_headers)
-            token_json = token_res.json()
-
-            logger.info(f"Apple 서버 응답 수신: {token_json}")
-            access_token = token_json.get('access_token')
-            id_token = token_json.get('id_token')
-            expires_in = token_json.get('expires_in', 0)
-            refresh_token_expires_in = token_json.get('refresh_token_expires_in', 0)
-
-            if not id_token:
-                logger.error("Apple에서 id_token 발급 실패")
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        else:
-            # access_token이 있을 때: 클라이언트에서 전달된 access_token 사용
-            logger.info(f"클라이언트에서 전달된 access_token 확인: {access_token}")
-            id_token = access_token  # access_token이 곧 id_token 역할을 함
-            expires_in = 0  # 만료 시간 정보가 없을 수 있으므로 0으로 설정
-            refresh_token_expires_in = 0
-
-        # id_token 디코딩 및 사용자 정보 추출
-        logger.info("Apple id_token 디코딩 시작")
-        token_decode = jwt.decode(id_token, '', options={"verify_signature": False})
-        logger.info(f"디코딩된 id_token 정보: {token_decode}")
-
-        if not token_decode.get('sub') or not token_decode.get('email') or not token_decode.get('email_verified'):
-            logger.error("Apple 사용자 정보 부족: sub, email, email_verified 필수 항목 누락")
+        # id_token 검증 및 사용자 정보 추출
+        logger.info("Apple id_token 검증 시작")
+        token_decode = self.verify_apple_token(id_token)
+        if not token_decode:
+            logger.error("Apple id_token 검증 실패")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        social_type = 'apple'
-        social_id = f"{social_type}_{token_decode['sub']}"
+        # 사용자 정보 추출
+        social_id = f"apple_{token_decode['sub']}"
         user_email = token_decode['email']
 
-        # 회원가입 및 로그인 처리
-        logger.info(f"회원가입 또는 로그인 처리 시작: social_id={social_id}, email={user_email}")
-        res = login_api(social_type=social_type, social_id=social_id, email=user_email)
+        # Django JWT 토큰 발급을 위한 사용자 생성 또는 조회
+        user = self.get_or_create_user(social_id, user_email)
 
-        # 토큰 정보 추가
-        if isinstance(res, Response):
-            current_time = datetime.utcnow()
-            access_token_expiry_time = current_time + timedelta(seconds=expires_in)
-            refresh_token_expiry_time = current_time + timedelta(seconds=refresh_token_expires_in)
+        # Django JWT 토큰 발급
+        jwt_token = self.generate_jwt_for_user(user)
 
-            is_expires = current_time >= access_token_expiry_time
-            is_refresh_token_expires = current_time >= refresh_token_expiry_time
+        return Response({
+            'access': str(jwt_token['access']),
+            'refresh': str(jwt_token['refresh']),
+        })
 
-            logger.info(f"토큰 만료 정보 추가: access_token 만료 여부={is_expires}, refresh_token 만료 여부={is_refresh_token_expires}")
+    def get_or_create_user(self, social_id, email):
+        '''
+        social_id를 기반으로 사용자 생성 또는 조회
+        '''
+        try:
+            user = UserModel.objects.get(social_id=social_id)
+        except UserModel.DoesNotExist:
+            # 새로운 사용자 생성
+            user = UserModel.objects.create(
+                social_id=social_id,
+                email=email,
+                is_active=True,
+                last_login=timezone.now(),
+            )
+        return user
 
-            res.data['data']['expires_in'] = expires_in
-            res.data['data']['refresh_token_expires_in'] = refresh_token_expires_in
-            res.data['data']['is_expires'] = is_expires
-            res.data['data']['is_refresh_token_expires'] = is_refresh_token_expires
+    def generate_jwt_for_user(self, user):
+        '''
+        Django JWT 토큰 생성
+        '''
+        refresh = RefreshToken.for_user(user)
+        logger.info('=====================================')
+        logger.info(refresh.access_token)
+        logger.info('=====================================')
+        
+        return {
+            'refresh': refresh,
+            'access': refresh.access_token,
+        }
 
-        logger.info("Apple 로그인 콜백 처리 완료")
-        return res
 
 class AppleEndpoint(APIView):
     permission_classes = [AllowAny]
