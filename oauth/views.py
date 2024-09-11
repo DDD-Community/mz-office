@@ -1,4 +1,4 @@
-import requests, jwt, time, os, json, requests
+import requests, jwt, time, os, json
 
 from django.conf import settings
 from django.shortcuts import redirect
@@ -278,46 +278,6 @@ class AppleCallbackView(APIView):
         logger.info("Apple Client Secret 생성 완료")
         return client_secret
 
-    def get_apple_public_keys(self):
-        '''
-        Apple 공개 키 가져오기
-        '''
-        response = requests.get("https://appleid.apple.com/auth/keys")
-        return response.json()
-
-    def verify_apple_token(self, id_token):
-        '''
-        Apple 토큰 서명 검증
-        '''
-        logger.info("Apple JWT 토큰 검증 시작")
-        apple_keys = self.get_apple_public_keys()
-        unverified_header = jwt.get_unverified_header(id_token)
-        rsa_key = {}
-        for key in apple_keys['keys']:
-            if key['kid'] == unverified_header['kid']:
-                rsa_key = {
-                    'kty': key['kty'],
-                    'kid': key['kid'],
-                    'use': key['use'],
-                    'n': key['n'],
-                    'e': key['e']
-                }
-        if rsa_key:
-            try:
-                decoded_token = jwt.decode(id_token, rsa_key, algorithms=['RS256'], audience=APPLE.CLIENT_ID)
-                return decoded_token
-            except jwt.ExpiredSignatureError:
-                logger.error("Apple JWT 토큰이 만료되었습니다.")
-                return None
-            except jwt.JWTClaimsError:
-                logger.error("JWT Claims 오류: audience 불일치")
-                return None
-            except Exception as e:
-                logger.error(f"토큰 검증 오류: {str(e)}")
-                return None
-        logger.error("Apple JWT RSA 키를 찾을 수 없습니다.")
-        return None
-
     @swagger_auto_schema(query_serializer=CallbackAppleInfoSerializer)
     def get(self, request):
         '''
@@ -372,12 +332,10 @@ class AppleCallbackView(APIView):
             expires_in = 0  # 만료 시간 정보가 없을 수 있으므로 0으로 설정
             refresh_token_expires_in = 0
 
-        # id_token 검증 및 사용자 정보 추출
-        logger.info("Apple id_token 검증 시작")
-        token_decode = self.verify_apple_token(id_token)
-        if not token_decode:
-            logger.error("Apple id_token 검증 실패")
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        # id_token 디코딩 및 사용자 정보 추출
+        logger.info("Apple id_token 디코딩 시작")
+        token_decode = jwt.decode(id_token, '', options={"verify_signature": False})
+        logger.info(f"디코딩된 id_token 정보: {token_decode}")
 
         if not token_decode.get('sub') or not token_decode.get('email') or not token_decode.get('email_verified'):
             logger.error("Apple 사용자 정보 부족: sub, email, email_verified 필수 항목 누락")
