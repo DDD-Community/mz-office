@@ -16,9 +16,8 @@ from oauth.utils import (
     APPLE,
 )
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from .serializers import *
-from users.models import UserModel
+from users.models import UserModel, CustomUserManager
 from users.views import LoginView, UserView
 from django.core.exceptions import ImproperlyConfigured
 import logging
@@ -324,10 +323,10 @@ class AppleCallbackView(APIView):
                 email=email,
                 is_active=True,
                 last_login=timezone.now(),
-                role=UserModel().get_role(id=2, role_name='user'),
+                role=CustomUserManager().get_role(id=2, role_name='user')
             )
         return user
-
+    
 class AppleEndpoint(APIView):
     permission_classes = [AllowAny]
 
