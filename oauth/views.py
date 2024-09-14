@@ -304,7 +304,7 @@ class AppleCallbackView(APIView):
 
             # JWT 토큰을 응답으로 반환
             return Response({
-                'access_token': str("Bearer "+refresh.access_token),  # Django JWT access_token
+                'access_token': f"Bearer {refresh.access_token}",  # Django JWT access_token
                 'refresh_token': str(refresh),              # Django JWT refresh_token
                 'expires_in': expires_in,
                 'refresh_token_expires_in': refresh_token_expires_in,
