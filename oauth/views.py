@@ -86,6 +86,7 @@ class KakaoCallbackView(APIView):
         # iOS에서 전달된 access_token 확인
         access_token = data.get('access_token')
         code = data.get('code')
+        
 
         expires_in = 0
         refresh_token_expires_in = 0
@@ -112,12 +113,14 @@ class KakaoCallbackView(APIView):
             refresh_token_expires_in = token_json.get('refresh_token_expires_in')
 
             if not access_token:
-                return custom_response(status=status.HTTP_400_BAD_REQUEST)
+                
+                return Response(status=status.HTTP_400_BAD_REQUEST)
 
             access_token = f"Bearer {access_token}"  # 'Bearer ' 마지막 띄어쓰기 필수
 
         elif not access_token:
-            return custom_response(status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         else:
             access_token = f"Bearer {access_token}"  # iOS에서 전달된 access_token 사용
 
@@ -128,6 +131,8 @@ class KakaoCallbackView(APIView):
         }
         
         user_info_res = requests.get(KAKAO.PROFILE_URL, headers=auth_headers)
+        
+
         user_info_json = user_info_res.json()
 
         social_type = 'kakao'
@@ -135,12 +140,15 @@ class KakaoCallbackView(APIView):
 
         kakao_account = user_info_json.get('kakao_account')
         if not kakao_account:
-            return custom_response(status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         user_email = kakao_account.get('email')
 
         # 회원가입 및 로그인
+        
         res = login_api(social_type=social_type, social_id=social_id, email=user_email)
         
+
         # 만약 `res`가 Response 객체라면, 데이터에 토큰 정보를 추가합니다.
         if isinstance(res, Response):
             current_time = datetime.utcnow()
@@ -150,17 +158,13 @@ class KakaoCallbackView(APIView):
             is_expires = current_time >= access_token_expiry_time
             is_refresh_token_expires = current_time >= refresh_token_expiry_time
 
-            res.data['expires_in'] = expires_in
-            res.data['refresh_token_expires_in'] = refresh_token_expires_in
-            res.data['is_expires'] = is_expires
-            res.data['is_refresh_token_expires'] = is_refresh_token_expires
+            res.data['data']['expires_in'] = expires_in
+            res.data['data']['refresh_token_expires_in'] = refresh_token_expires_in
+            res.data['data']['is_expires'] = is_expires
+            res.data['data']['is_refresh_token_expires'] = is_refresh_token_expires
 
-        # 이미 res에 'data' 필드가 있으면 그대로 반환하고, 없으면 custom_response로 감싸기
-        if 'data' in res.data:
-            return res
-        else:
-            return custom_response(data=res.data)
-        
+        return res
+
 class AppleLoginView(APIView):
     permission_classes = [AllowAny]
 
