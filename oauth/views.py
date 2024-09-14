@@ -168,71 +168,6 @@ class KakaoCallbackView(APIView):
 
         return res
 
-class GoogleLoginView(APIView):
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        '''
-        google code 요청
-
-        ---
-        '''
-        client_id = GOOGLE.CLIENT_ID
-        redirect_uri = GOOGLE.REDIRECT_URI
-        uri = f"{GOOGLE.LOGIN_URI}?client_id={client_id}&redirect_uri={redirect_uri}&scope={GOOGLE.SCOPE}&response_type=code"
-
-        res = redirect(uri)
-        return res
-
-class GoogleCallbackView(APIView):
-    permission_classes = [AllowAny]
-
-    @swagger_auto_schema(query_serializer=CallbackUserInfoSerializer)
-    def get(self, request):
-        '''
-        google access_token 및 user_info 요청
-
-        ---
-        '''
-        data = request.query_params
-
-        # access_token 발급 요청
-        code = data.get('code')
-        if not code:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        request_data = {
-            'client_id': GOOGLE.CLIENT_ID,
-            'client_secret': GOOGLE.CLIENT_SECRET,
-            'code': code,
-            'grant_type': 'authorization_code',
-            'redirect_uri': GOOGLE.REDIRECT_URI,
-        }
-        token_res = requests.post(GOOGLE.TOKEN_URI, data=request_data)
-
-        token_json = token_res.json()
-        access_token = token_json['access_token']
-
-        if not access_token:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        # google 회원정보 요청
-        query_string = {
-            'access_token': access_token
-        }
-        user_info_res = requests.get(GOOGLE.PROFILE_URI, params=query_string)
-        user_info_json = user_info_res.json()
-        if (user_info_res.status_code != 200) or (not user_info_json):
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        social_type = 'google'
-        social_id = f"{social_type}_{user_info_json.get('user_id')}"
-        user_email = user_info_json.get('email')
-
-        # 회원가입 및 로그인
-        res = login_api(social_type=social_type, social_id=social_id, email=user_email)
-        return res
-
 class AppleLoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -369,7 +304,7 @@ class AppleCallbackView(APIView):
 
             # JWT 토큰을 응답으로 반환
             return Response({
-                'access_token': str(refresh.access_token),  # Django JWT access_token
+                'access_token': str("Bearer "+refresh.access_token),  # Django JWT access_token
                 'refresh_token': str(refresh),              # Django JWT refresh_token
                 'expires_in': expires_in,
                 'refresh_token_expires_in': refresh_token_expires_in,
@@ -458,3 +393,71 @@ class AppleEndpoint(APIView):
         else:
             logger.error(f"Apple 계정 토큰 무효화 실패: status_code={response.status_code}")
             return False
+
+
+
+
+class GoogleLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        '''
+        google code 요청
+
+        ---
+        '''
+        client_id = GOOGLE.CLIENT_ID
+        redirect_uri = GOOGLE.REDIRECT_URI
+        uri = f"{GOOGLE.LOGIN_URI}?client_id={client_id}&redirect_uri={redirect_uri}&scope={GOOGLE.SCOPE}&response_type=code"
+
+        res = redirect(uri)
+        return res
+
+class GoogleCallbackView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(query_serializer=CallbackUserInfoSerializer)
+    def get(self, request):
+        '''
+        google access_token 및 user_info 요청
+
+        ---
+        '''
+        data = request.query_params
+
+        # access_token 발급 요청
+        code = data.get('code')
+        if not code:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        request_data = {
+            'client_id': GOOGLE.CLIENT_ID,
+            'client_secret': GOOGLE.CLIENT_SECRET,
+            'code': code,
+            'grant_type': 'authorization_code',
+            'redirect_uri': GOOGLE.REDIRECT_URI,
+        }
+        token_res = requests.post(GOOGLE.TOKEN_URI, data=request_data)
+
+        token_json = token_res.json()
+        access_token = token_json['access_token']
+
+        if not access_token:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        # google 회원정보 요청
+        query_string = {
+            'access_token': access_token
+        }
+        user_info_res = requests.get(GOOGLE.PROFILE_URI, params=query_string)
+        user_info_json = user_info_res.json()
+        if (user_info_res.status_code != 200) or (not user_info_json):
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        social_type = 'google'
+        social_id = f"{social_type}_{user_info_json.get('user_id')}"
+        user_email = user_info_json.get('email')
+
+        # 회원가입 및 로그인
+        res = login_api(social_type=social_type, social_id=social_id, email=user_email)
+        return res
