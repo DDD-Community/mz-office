@@ -24,6 +24,7 @@ from django.core.exceptions import ImproperlyConfigured
 import logging
 from datetime import datetime, timedelta
 from django.utils import timezone
+from project.utils import custom_response
 
 logger = logging.getLogger('django.request')
 
@@ -85,7 +86,6 @@ class KakaoCallbackView(APIView):
         # iOS에서 전달된 access_token 확인
         access_token = data.get('access_token')
         code = data.get('code')
-        
 
         expires_in = 0
         refresh_token_expires_in = 0
@@ -112,14 +112,12 @@ class KakaoCallbackView(APIView):
             refresh_token_expires_in = token_json.get('refresh_token_expires_in')
 
             if not access_token:
-                
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                return custom_response(status=status.HTTP_400_BAD_REQUEST)
 
             access_token = f"Bearer {access_token}"  # 'Bearer ' 마지막 띄어쓰기 필수
 
         elif not access_token:
-            
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return custom_response(status=status.HTTP_400_BAD_REQUEST)
         else:
             access_token = f"Bearer {access_token}"  # iOS에서 전달된 access_token 사용
 
@@ -130,8 +128,6 @@ class KakaoCallbackView(APIView):
         }
         
         user_info_res = requests.get(KAKAO.PROFILE_URL, headers=auth_headers)
-        
-
         user_info_json = user_info_res.json()
 
         social_type = 'kakao'
@@ -139,15 +135,12 @@ class KakaoCallbackView(APIView):
 
         kakao_account = user_info_json.get('kakao_account')
         if not kakao_account:
-            
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return custom_response(status=status.HTTP_400_BAD_REQUEST)
         user_email = kakao_account.get('email')
 
         # 회원가입 및 로그인
-        
         res = login_api(social_type=social_type, social_id=social_id, email=user_email)
         
-
         # 만약 `res`가 Response 객체라면, 데이터에 토큰 정보를 추가합니다.
         if isinstance(res, Response):
             current_time = datetime.utcnow()
@@ -157,17 +150,17 @@ class KakaoCallbackView(APIView):
             is_expires = current_time >= access_token_expiry_time
             is_refresh_token_expires = current_time >= refresh_token_expiry_time
 
-            res.data['data']['expires_in'] = expires_in
-            res.data['data']['refresh_token_expires_in'] = refresh_token_expires_in
-            res.data['data']['is_expires'] = is_expires
-            res.data['data']['is_refresh_token_expires'] = is_refresh_token_expires
+            res.data['expires_in'] = expires_in
+            res.data['refresh_token_expires_in'] = refresh_token_expires_in
+            res.data['is_expires'] = is_expires
+            res.data['is_refresh_token_expires'] = is_refresh_token_expires
 
+        # 이미 res에 'data' 필드가 있으면 그대로 반환하고, 없으면 custom_response로 감싸기
+        if 'data' in res.data:
+            return res
+        else:
+            return custom_response(data=res.data)
         
-        
-        
-
-        return res
-
 class AppleLoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -230,7 +223,7 @@ class AppleCallbackView(APIView):
         # code와 access_token이 모두 없으면 에러 반환
         if not code and not access_token:
             logger.error("code와 access_token이 없음")
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return custom_response(status=status.HTTP_400_BAD_REQUEST)
 
         if code:
             # code가 있을 때: Apple 서버에서 access_token 발급 요청
@@ -260,7 +253,7 @@ class AppleCallbackView(APIView):
 
             if not id_token:
                 logger.error("Apple에서 id_token 발급 실패")
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                return custom_response(status=status.HTTP_400_BAD_REQUEST)
 
         else:
             # access_token이 있을 때: 클라이언트에서 전달된 access_token 사용
@@ -276,7 +269,7 @@ class AppleCallbackView(APIView):
 
         if not token_decode.get('sub') or not token_decode.get('email') or not token_decode.get('email_verified'):
             logger.error("Apple 사용자 정보 부족: sub, email, email_verified 필수 항목 누락")
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return custom_response(status=status.HTTP_400_BAD_REQUEST)
 
         social_type = 'apple'
         social_id = f"{social_type}_{token_decode['sub']}"
@@ -303,7 +296,7 @@ class AppleCallbackView(APIView):
             is_refresh_token_expires = current_time >= refresh_token_expiry_time
 
             # JWT 토큰을 응답으로 반환
-            return Response({
+            return custom_response(data={
                 'access_token': f"Bearer {refresh.access_token}",  # Django JWT access_token
                 'refresh_token': str(refresh),              # Django JWT refresh_token
                 'expires_in': expires_in,
@@ -312,7 +305,7 @@ class AppleCallbackView(APIView):
                 'is_refresh_token_expires': is_refresh_token_expires,
             }, status=status.HTTP_200_OK)
 
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return custom_response(status=status.HTTP_400_BAD_REQUEST)
 
     def get_or_create_user(self, social_id, email):
         '''
@@ -344,7 +337,7 @@ class AppleEndpoint(APIView):
         user_email = data.get('email')  # Apple에서 제공하는 사용자 이메일
 
         if not social_id or not user_email:
-            return Response({"detail": "Invalid request"}, status=status.HTTP_400_BAD_REQUEST)
+            return custom_response({"detail": "Invalid request"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Apple API 호출하여 계정 삭제 요청
         if self.revoke_apple_token(social_id):
@@ -356,14 +349,14 @@ class AppleEndpoint(APIView):
                 user.delete()
 
                 logger.info(f"Apple 사용자 {social_id} 탈퇴 완료")
-                return Response({"detail": "Account deleted"}, status=status.HTTP_200_OK)
+                return custom_response({"detail": "Account deleted"}, status=status.HTTP_200_OK)
 
             except UserModel.DoesNotExist:
                 logger.error(f"사용자를 찾을 수 없습니다: social_id={social_id}")
-                return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+                return custom_response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
         else:
             logger.error(f"Apple 계정 삭제 실패: social_id={social_id}")
-            return Response({"detail": "Apple account deletion failed"}, status=status.HTTP_400_BAD_REQUEST)
+            return custom_response({"detail": "Apple account deletion failed"}, status=status.HTTP_400_BAD_REQUEST)
 
     def revoke_apple_token(self, social_id):
         '''
@@ -393,8 +386,6 @@ class AppleEndpoint(APIView):
         else:
             logger.error(f"Apple 계정 토큰 무효화 실패: status_code={response.status_code}")
             return False
-
-
 
 
 class GoogleLoginView(APIView):
