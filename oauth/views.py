@@ -324,6 +324,7 @@ class AppleCallbackView(APIView):
                 email=email,
                 is_active=True,
                 last_login=timezone.now(),
+                role=UserModel().get_role(id=2, role_name='user'),
             )
         return user
 
