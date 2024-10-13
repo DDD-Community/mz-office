@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     'question',
     'oauth',
     'users',
+    'ddd',
 ]
 
 MIDDLEWARE = [
@@ -315,11 +316,16 @@ SWAGGER_SETTINGS = {
             'type': 'apiKey',
             'in': 'header',
             'name': 'Authorization'
+        },
+        'CSRF Token': {
+            'type': 'apiKey',
+            'in': 'header',
+            'name': 'X-CSRFToken',  # CSRF 토큰을 헤더에 포함
         }
     },
     'LOGIN_URL': 'users:login',
     'LOGOUT_URL': 'users:logout',
-    'USE_SESSION_AUTH': False,
+    'USE_SESSION_AUTH': True,  # 세션 인증을 사용하여 CSRF 보호에 대응
 }
 # SWAGGER Setting End
 
