@@ -44,7 +44,7 @@ urlpatterns = [
     path('ddd-swagger/', new_schema_view.with_ui('swagger', cache_timeout=0), name='new-schema-swagger-ui'),  # 새로운 스웨거 문서 경로
     path('v1/', include('question.urls')),
     path('v1/', include('app.urls')),
-    path('v1/', include('ddd.urls')),
+    path('', include('ddd.urls')),
     path('', app.views.index, name='index'),
     path('oauth/', include('oauth.urls')),
     path('users/', include('users.urls', namespace='users')),
