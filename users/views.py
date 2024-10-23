@@ -473,14 +473,19 @@ class UnblockUserView(APIView):
     def delete(self, request, blocked_user_id):
         user_id = request.user.social_id
 
-        try:
-            block_instance = Block.objects.get(user_id=user_id, blocked_user_id=blocked_user_id)
-            block_instance.block_yn = 'N'
-            block_instance.save(update_fields=['block_yn', 'update_at'])
-            return custom_response(data={"status": True, "message": "유저 차단이 해제되었습니다."}, status=status.HTTP_200_OK)
-        except Block.DoesNotExist:
-            return custom_response(data={"status": False, "message": "차단 기록이 존재하지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        # 해당 유저와 차단된 유저 간의 모든 차단 기록 조회
+        block_instances = Block.objects.filter(user_id=user_id, blocked_user_id=blocked_user_id)
 
+        if block_instances.exists():
+            # 모든 차단 기록의 block_yn을 'N'으로 설정하고 저장
+            for block_instance in block_instances:
+                block_instance.block_yn = 'N'
+                block_instance.save(update_fields=['block_yn', 'update_at'])
+
+            return custom_response(data={"status": True, "message": "유저 차단이 해제되었습니다."}, status=status.HTTP_200_OK)
+        else:
+            # 차단 기록이 존재하지 않을 경우
+            return custom_response(data={"status": False, "message": "차단 기록이 존재하지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
 class GenerationView(APIView):
     permission_classes = [AllowAny]
