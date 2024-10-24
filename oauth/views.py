@@ -188,7 +188,6 @@ class AppleCallbackView(APIView):
         '''
         CLIENT_SECRET 생성
         '''
-        logger.info("Apple Client Secret 생성 시작")
         headers = {
             'alg': 'ES256',
             'kid': APPLE.KEY_ID,
@@ -209,7 +208,6 @@ class AppleCallbackView(APIView):
             headers=headers
         )
 
-        logger.info("Apple Client Secret 생성 완료")
         return client_secret
 
     @swagger_auto_schema(query_serializer=CallbackAppleInfoSerializer)
@@ -217,7 +215,6 @@ class AppleCallbackView(APIView):
         '''
         Apple id_token 및 user_info 조회
         '''
-        logger.info("Apple 로그인 콜백 요청 시작")
         data = request.query_params
 
         access_token = data.get('access_token')
@@ -230,7 +227,6 @@ class AppleCallbackView(APIView):
 
         if code:
             # code가 있을 때: Apple 서버에서 access_token 발급 요청
-            logger.info(f"Authorization code 확인: {code}")
             client_secret = self.get_key_and_secret()
 
             request_data = {
@@ -244,11 +240,9 @@ class AppleCallbackView(APIView):
                 'Content-type': 'application/x-www-form-urlencoded;charset=utf-8'
             }
 
-            logger.info("Apple 서버에 토큰 요청 시작")
             token_res = requests.post(APPLE.TOKEN_URL, data=request_data, headers=token_headers)
             token_json = token_res.json()
 
-            logger.info(f"Apple 서버 응답 수신: {token_json}")
             access_token = token_json.get('access_token')
             id_token = token_json.get('id_token')
             expires_in = token_json.get('expires_in', 0)
@@ -260,15 +254,12 @@ class AppleCallbackView(APIView):
 
         else:
             # access_token이 있을 때: 클라이언트에서 전달된 access_token 사용
-            logger.info(f"클라이언트에서 전달된 access_token 확인: {access_token}")
             id_token = access_token  # access_token이 곧 id_token 역할을 함
             expires_in = 0  # 만료 시간 정보가 없을 수 있으므로 0으로 설정
             refresh_token_expires_in = 0
 
         # id_token 디코딩 및 사용자 정보 추출
-        logger.info("Apple id_token 디코딩 시작")
         token_decode = jwt.decode(id_token, '', options={"verify_signature": False})
-        logger.info(f"디코딩된 id_token 정보: {token_decode}")
 
         if not token_decode.get('sub') or not token_decode.get('email') or not token_decode.get('email_verified'):
             logger.error("Apple 사용자 정보 부족: sub, email, email_verified 필수 항목 누락")
@@ -279,7 +270,6 @@ class AppleCallbackView(APIView):
         user_email = token_decode['email']
 
         # 회원가입 및 로그인 처리
-        logger.info(f"회원가입 또는 로그인 처리 시작: social_id={social_id}, email={user_email}")
         user = self.get_or_create_user(social_id, user_email)
 
         # Django JWT 토큰 생성 및 반환
@@ -289,8 +279,6 @@ class AppleCallbackView(APIView):
             # Django에서 JWT 토큰 생성
             refresh = RefreshToken.for_user(user)
 
-            logger.info(f"JWT access_token 생성: {str(refresh.access_token)}")
-            logger.info(f"JWT refresh_token 생성: {str(refresh)}")
 
             access_token_expiry_time = current_time + timedelta(seconds=expires_in)
             refresh_token_expiry_time = current_time + timedelta(seconds=refresh_token_expires_in)
@@ -345,14 +333,12 @@ class AppleEndpoint(APIView):
 
         # Apple API 호출하여 계정 삭제 요청
         if self.revoke_apple_token(social_id):
-            logger.info(f"Apple 계정 삭제 성공: social_id={social_id}")
 
             # 사용자 삭제 처리 로직
             try:
                 user = UserModel.objects.get(social_id=social_id)
                 user.delete()
 
-                logger.info(f"Apple 사용자 {social_id} 탈퇴 완료")
                 return custom_response({"detail": "Account deleted"}, status=status.HTTP_200_OK)
 
             except UserModel.DoesNotExist:
@@ -385,7 +371,6 @@ class AppleEndpoint(APIView):
         response = requests.post(url, data=data, headers=headers)
         
         if response.status_code == 200:
-            logger.info(f"Apple 계정 토큰 무효화 성공: social_id={social_id}")
             return True
         else:
             logger.error(f"Apple 계정 토큰 무효화 실패: status_code={response.status_code}")

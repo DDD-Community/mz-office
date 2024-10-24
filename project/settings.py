@@ -86,7 +86,6 @@ INSTALLED_APPS = [
     'question',
     'oauth',
     'users',
-    'ddd',
 ]
 
 MIDDLEWARE = [
